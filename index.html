@@ -1188,6 +1188,7 @@
       typed = target.slice(0, i + 1); hiddenInput.value = typed; hintLetters++;
       statusEl.textContent = "A letter, offered: \u201c" + target[i].toLowerCase() + "\u201d \u2014 fewer points.";
       renderWord();
+      try { hiddenInput.focus(); } catch (e) {}
       if (typed.length === target.length) checkTyped();
     }
   }
@@ -1214,6 +1215,12 @@
   shuffleBtn.addEventListener("click", shufflePool);
   document.getElementById("hint").addEventListener("click", giveHint);
   document.getElementById("skip").addEventListener("click", newWord);
+  // in the type-only mode, keep the hidden input focused when using the controls,
+  // so you can carry straight on typing after a hint
+  ["shuffle", "hint", "skip"].forEach(id => {
+    const b = document.getElementById(id);
+    if (b) b.addEventListener("mousedown", (e) => { if (!currentMode.pool) e.preventDefault(); });
+  });
   lenRange.addEventListener("input", () => { wordLen = parseInt(lenRange.value, 10); lenVal.textContent = wordLen; });
   lenRange.addEventListener("change", () => { wordLen = parseInt(lenRange.value, 10); lenVal.textContent = wordLen; newWord(); save(); });
 
