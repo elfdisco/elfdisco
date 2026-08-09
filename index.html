@@ -95,19 +95,14 @@
   }
   .mode:hover { background: rgba(255,248,224,0.8); color: var(--ink); }
   .mode.active { background: var(--accent); color: #fdf3df; border-color: var(--accent); }
-  .mode .mx { font-style: normal; font-weight: 700; opacity: .8; font-size: .82rem; margin-left: 2px; }
-  .mode.active .mx { opacity: 1; }
-  .clue.noclue { opacity: .6; font-style: italic; }
-  .typein { display: flex; gap: 10px; justify-content: center; align-items: center; margin-bottom: 24px; }
-  .typein input {
-    font-family: var(--display); font-size: 1.6rem; text-align: center; text-transform: uppercase;
-    letter-spacing: .12em; color: var(--ink); width: min(320px, 70%);
-    background: rgba(255,248,224,0.6); border: none; border-bottom: 2px solid var(--line);
-    border-radius: 6px 6px 0 0; padding: 8px 10px; outline: none;
-  }
-  .typein input:focus { border-bottom-color: var(--accent); background: rgba(255,248,224,0.85); }
-  .typein.correct input { border-bottom-color: #7c8a5f; background: rgba(190,199,150,0.35); }
-  .typein.wrong { animation: sway .5s ease; }
+  .clue.noclue { opacity: .55; font-style: italic; }
+  .lengthpick { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0 0 18px; font-family: var(--display); font-style: italic; color: var(--ink-soft); font-size: .95rem; }
+  .lengthpick input[type=range] { -webkit-appearance: none; appearance: none; height: 4px; width: min(220px, 48vw); border-radius: 2px; background: var(--line); outline: none; }
+  .lengthpick input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; box-shadow: 0 1px 3px rgba(90,60,30,0.4); }
+  .lengthpick input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border: none; border-radius: 50%; background: var(--accent); cursor: pointer; }
+  .lengthpick #lenVal { font-family: var(--display); font-weight: 700; font-style: normal; color: var(--ink); min-width: 1.2em; text-align: center; }
+  .hidden-input { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+  .slot.active { border-bottom-color: var(--accent); box-shadow: 0 2px 0 -1px var(--accent); }
 
   /* ---- wooden workshop (left) ---- */
   .workshop {
@@ -498,13 +493,15 @@
       <div class="panel wordgame">
         <p class="wordgame-head">guess the word &mdash; each one earns you glimmer</p>
         <div class="modes" id="modes"></div>
+        <div class="lengthpick">
+          <label for="lenRange">word length</label>
+          <input type="range" id="lenRange" min="4" max="13" value="7" step="1" />
+          <span id="lenVal">7</span>
+        </div>
         <p class="clue" id="clue"></p>
         <div class="slots" id="slots" aria-label="your word"></div>
+        <input id="hiddenInput" class="hidden-input" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" aria-label="type the word" />
         <div class="pool"  id="pool"  aria-label="letters to choose from"></div>
-        <div class="typein" id="typein">
-          <input id="typeInput" type="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="type the word&hellip;" aria-label="type the word" />
-          <button class="btn" id="typeSubmit">confirm</button>
-        </div>
         <div class="controls">
           <button class="btn" id="shuffle">rearrange</button>
           <button class="btn" id="hint">a gentle hint</button>
@@ -569,8 +566,6 @@
       <p class="ledger-note" id="villageCap">an empty meadow, waiting for the first light</p>
       <p class="ledger-foot">another corner of the grove is being dreamt up&hellip;</p>
     </aside>
-
-    <footer>a quiet hour of the internet, kept warm for whoever arrives.</footer>
   </div>
 
   <!-- ===== ELF ===== -->
@@ -881,106 +876,126 @@
      WORD GAME
   ================================================================ */
   const WORDS = [
+    // d: 1 easy/common · 2 medium · 3 harder
     // --- 4 ---
-    { w: "MOON",  c: "The night's one good lamp." },
-    { w: "LEAF",  c: "A tree's smallest, most numerous flag." },
-    { w: "ECHO",  c: "A sound that insists on having the last word." },
-    { w: "TIDE",  c: "The sea, breathing slowly in and out." },
-    { w: "GLEN",  c: "A small valley, tucked out of the wind." },
-    { w: "WISP",  c: "A thread of smoke, or a trick of the marsh-light." },
-    { w: "FERN",  c: "A leaf that uncurls like a question mark." },
-    { w: "DUSK",  c: "The day, dimming its own lights." },
-    { w: "HALO",  c: "A ring of light that follows the good." },
-    { w: "OPAL",  c: "A stone that keeps a rainbow indoors." },
-    { w: "MOSS",  c: "A green hush that grows on old stone." },
-    { w: "SNOW",  c: "The sky's quiet way of tidying up." },
+    { w:"MOON", d:1, c:"The night's one good lamp." },
+    { w:"LEAF", d:1, c:"A tree's smallest, most numerous flag." },
+    { w:"ECHO", d:1, c:"A sound that insists on the last word." },
+    { w:"TIDE", d:1, c:"The sea, breathing slowly in and out." },
+    { w:"GLEN", d:2, c:"A small valley, tucked out of the wind." },
+    { w:"WISP", d:2, c:"A thread of smoke, or a trick of marsh-light." },
+    { w:"FERN", d:1, c:"A leaf that uncurls like a question mark." },
+    { w:"DUSK", d:1, c:"The day, dimming its own lights." },
+    { w:"HALO", d:2, c:"A ring of light the good seem to wear." },
+    { w:"OPAL", d:2, c:"A stone that keeps a rainbow indoors." },
+    { w:"MOSS", d:1, c:"A green hush that grows on old stone." },
+    { w:"SNOW", d:1, c:"The sky's quiet way of tidying up." },
     // --- 5 ---
-    { w: "EMBER", c: "The fire's quiet way of saying goodnight." },
-    { w: "AMBER", c: "A summer afternoon, kept in a stone." },
-    { w: "BROOK", c: "A stream too small to take seriously." },
-    { w: "FROST", c: "Winter's handwriting on the window." },
-    { w: "CHIME", c: "A bell's short, polite sentence." },
-    { w: "MIRTH", c: "Laughter, before it grows up." },
-    { w: "QUILL", c: "A feather that learned to write." },
-    { w: "MAPLE", c: "The tree that bleeds sweetness." },
-    { w: "CIDER", c: "Autumn, poured into a cup." },
-    { w: "RAVEN", c: "A black bird with a taste for riddles." },
-    { w: "CLOUD", c: "A daydream the sky is having." },
-    { w: "RIVER", c: "A road that carries itself along." },
-    { w: "PETAL", c: "A flower's soft, falling coin." },
-    { w: "COMET", c: "A star with somewhere else to be." },
-    { w: "GROVE", c: "A small, secret gathering of trees." },
-    { w: "HONEY", c: "Summer, thickened slowly into gold." },
+    { w:"EMBER", d:1, c:"The fire's quiet way of saying goodnight." },
+    { w:"AMBER", d:2, c:"A summer afternoon, kept in a stone." },
+    { w:"BROOK", d:2, c:"A stream too small to take seriously." },
+    { w:"FROST", d:1, c:"Winter's handwriting on the window." },
+    { w:"CHIME", d:2, c:"A bell's short, polite sentence." },
+    { w:"MIRTH", d:3, c:"Laughter, before it grows up." },
+    { w:"QUILL", d:3, c:"A feather that learned to write." },
+    { w:"MAPLE", d:1, c:"The tree that bleeds sweetness." },
+    { w:"CIDER", d:1, c:"Autumn, poured into a cup." },
+    { w:"RAVEN", d:2, c:"A black bird with a taste for riddles." },
+    { w:"CLOUD", d:1, c:"A daydream the sky is having." },
+    { w:"RIVER", d:1, c:"A road that carries itself along." },
+    { w:"PETAL", d:1, c:"A flower's soft, falling coin." },
+    { w:"COMET", d:2, c:"A star with somewhere else to be." },
+    { w:"GROVE", d:2, c:"A small, secret gathering of trees." },
+    { w:"HONEY", d:1, c:"Summer, thickened slowly into gold." },
+    { w:"IVORY", d:3, c:"An off-white the colour of old piano keys." },
     // --- 6 ---
-    { w: "WILLOW", c: "The tree that learned to bow and never stopped." },
-    { w: "MEADOW", c: "Where the afternoon goes to lie down." },
-    { w: "VELVET", c: "The softest word for something worth keeping." },
-    { w: "HEARTH", c: "Home, if home were a warm and glowing thing." },
-    { w: "CANDLE", c: "A small, patient flame with a job to do." },
-    { w: "MARBLE", c: "A tiny frozen galaxy you can hold." },
-    { w: "BREEZE", c: "The wind, being gentle for once." },
-    { w: "SILVER", c: "The moon's favourite colour." },
-    { w: "GARDEN", c: "A tidy argument between you and nature." },
-    { w: "AUTUMN", c: "The year, letting go, beautifully." },
-    { w: "FOREST", c: "A crowd of trees keeping their counsel." },
-    { w: "RIDDLE", c: "A question wearing a clever disguise." },
-    { w: "TINSEL", c: "Silver rain that never reaches the ground." },
-    { w: "SPRITE", c: "A small spirit with a fondness for mischief." },
-    { w: "WINTER", c: "The season that keeps the fire busy." },
-    { w: "FROLIC", c: "Joy that refuses to sit still." },
+    { w:"WILLOW", d:2, c:"The tree that learned to bow and never stopped." },
+    { w:"MEADOW", d:1, c:"Where the afternoon goes to lie down." },
+    { w:"VELVET", d:2, c:"The softest word for something worth keeping." },
+    { w:"HEARTH", d:2, c:"Home, if home were a warm and glowing thing." },
+    { w:"CANDLE", d:1, c:"A small, patient flame with a job to do." },
+    { w:"MARBLE", d:2, c:"A tiny frozen galaxy you can hold." },
+    { w:"BREEZE", d:1, c:"The wind, being gentle for once." },
+    { w:"SILVER", d:1, c:"The moon's favourite colour." },
+    { w:"GARDEN", d:1, c:"A tidy argument between you and nature." },
+    { w:"AUTUMN", d:1, c:"The year, letting go, beautifully." },
+    { w:"FOREST", d:1, c:"A crowd of trees keeping their counsel." },
+    { w:"RIDDLE", d:2, c:"A question wearing a clever disguise." },
+    { w:"TINSEL", d:2, c:"Silver rain that never reaches the ground." },
+    { w:"SPRITE", d:2, c:"A small spirit with a fondness for mischief." },
+    { w:"WINTER", d:1, c:"The season that keeps the fire busy." },
+    { w:"FROLIC", d:3, c:"Joy that refuses to sit still." },
     // --- 7 ---
-    { w: "GLIMMER", c: "The last of the light, reluctant to leave." },
-    { w: "LANTERN", c: "A jar that decided to keep a little sun." },
-    { w: "WHISPER", c: "A voice folded small enough to fit in your ear." },
-    { w: "REVERIE", c: "A daydream you didn't mean to wander into." },
-    { w: "SHIMMER", c: "Light, doing its quiet best to be noticed." },
-    { w: "LULLABY", c: "A song built to be forgotten, gently." },
-    { w: "CRIMSON", c: "Red, dressed in its Sunday best." },
-    { w: "COMPASS", c: "It always knows which way is home." },
-    { w: "ECLIPSE", c: "When the moon photobombs the sun." },
-    { w: "HARVEST", c: "Autumn's reward for a summer of patience." },
-    { w: "MYSTERY", c: "A locked door with the key left nearby." },
-    { w: "JOURNEY", c: "The long way round that becomes the point." },
-    { w: "ORCHARD", c: "A field where apples wait to be picked." },
-    { w: "FIREFLY", c: "A star too impatient to wait for night." },
-    { w: "MERMAID", c: "Half a sailor's dream, half a fish." },
-    { w: "RAINBOW", c: "A bridge the rain builds and never crosses." },
-    { w: "TWINKLE", c: "The small, private wink of a star." },
+    { w:"GLIMMER", d:2, c:"The last of the light, reluctant to leave." },
+    { w:"LANTERN", d:1, c:"A jar that decided to keep a little sun." },
+    { w:"WHISPER", d:1, c:"A voice folded small enough to fit in your ear." },
+    { w:"REVERIE", d:3, c:"A daydream you didn't mean to wander into." },
+    { w:"SHIMMER", d:2, c:"Light, doing its quiet best to be noticed." },
+    { w:"LULLABY", d:2, c:"A song built to be forgotten, gently." },
+    { w:"CRIMSON", d:2, c:"Red, dressed in its Sunday best." },
+    { w:"COMPASS", d:1, c:"It always knows which way is home." },
+    { w:"ECLIPSE", d:2, c:"When the moon photobombs the sun." },
+    { w:"HARVEST", d:1, c:"Autumn's reward for a summer of patience." },
+    { w:"MYSTERY", d:1, c:"A locked door with the key left nearby." },
+    { w:"JOURNEY", d:1, c:"The long way round that becomes the point." },
+    { w:"ORCHARD", d:2, c:"A field where apples wait to be picked." },
+    { w:"FIREFLY", d:1, c:"A star too impatient to wait for night." },
+    { w:"MERMAID", d:1, c:"Half a sailor's dream, half a fish." },
+    { w:"RAINBOW", d:1, c:"A bridge the rain builds and never crosses." },
+    { w:"TWINKLE", d:2, c:"The small, private wink of a star." },
     // --- 8 ---
-    { w: "TWILIGHT", c: "The blue hour between the day and its dreams." },
-    { w: "MISCHIEF", c: "An elf's favourite way to pass an evening." },
-    { w: "STARDUST", c: "Sweepings from a galaxy that keeps tidy." },
-    { w: "MOONBEAM", c: "The lamp the night hangs out for free." },
-    { w: "SNOWFALL", c: "The sky, quietly emptying its pockets." },
-    { w: "DAYDREAM", c: "A short holiday the mind takes alone." },
-    { w: "LAVENDER", c: "A purple that smells like calm." },
-    { w: "MARIGOLD", c: "A flower the colour of a small sun." },
-    { w: "SEASHELL", c: "The sea's tiny, spiralling souvenir." },
-    { w: "HEIRLOOM", c: "A thing that quietly outlives its owners." },
-    { w: "CINNAMON", c: "A spice that tastes like a warm memory." },
-    { w: "DAFFODIL", c: "Spring's first yellow trumpet." },
-    { w: "BLUEBELL", c: "A woodland flower that rings without a sound." },
-    { w: "PINECONE", c: "A tree's small, scaly parcel of seeds." },
+    { w:"TWILIGHT", d:2, c:"The blue hour between the day and its dreams." },
+    { w:"MISCHIEF", d:1, c:"An elf's favourite way to pass an evening." },
+    { w:"STARDUST", d:2, c:"Sweepings from a galaxy that keeps tidy." },
+    { w:"MOONBEAM", d:1, c:"The lamp the night hangs out for free." },
+    { w:"SNOWFALL", d:1, c:"The sky, quietly emptying its pockets." },
+    { w:"DAYDREAM", d:1, c:"A short holiday the mind takes alone." },
+    { w:"LAVENDER", d:2, c:"A purple that smells like calm." },
+    { w:"MARIGOLD", d:2, c:"A flower the colour of a small sun." },
+    { w:"SEASHELL", d:1, c:"The sea's tiny, spiralling souvenir." },
+    { w:"HEIRLOOM", d:3, c:"A thing that quietly outlives its owners." },
+    { w:"CINNAMON", d:2, c:"A spice that tastes like a warm memory." },
+    { w:"DAFFODIL", d:1, c:"Spring's first yellow trumpet." },
+    { w:"BLUEBELL", d:2, c:"A woodland flower that rings without a sound." },
+    { w:"PINECONE", d:1, c:"A tree's small, scaly parcel of seeds." },
     // --- 9 ---
-    { w: "MOONLIGHT", c: "Daylight, after it has thoroughly calmed down." },
-    { w: "BUTTERFLY", c: "A caterpillar's second, far better idea." },
-    { w: "WHIRLPOOL", c: "Water going down with a great deal of drama." },
-    { w: "LABYRINTH", c: "A maze that takes itself very seriously." },
-    { w: "EVERGREEN", c: "A tree that refuses to admit it's winter." },
-    { w: "SNOWFLAKE", c: "A tiny promise that no two are alike." },
-    { w: "ADVENTURE", c: "What you call a plan once it goes wrong." },
-    { w: "WATERFALL", c: "A river that decided to fall instead." },
-    { w: "NIGHTFALL", c: "The daily, gentle switching-off of the sky." },
-    { w: "CHRYSALIS", c: "A quiet waiting-room for a butterfly." },
-    { w: "DANDELION", c: "A flower that grows up to become a wish." },
-    // --- 10+ ---
-    { w: "WILDERNESS", c: "Land that never learned any manners." },
-    { w: "LIGHTHOUSE", c: "A tall lamp that worries about ships." },
-    { w: "MOONFLOWER", c: "A bloom that opens only for the night." },
-    { w: "WILDFLOWER", c: "A blossom that planted itself, thank you." },
-    { w: "PEPPERMINT", c: "A cool green whisper of winter." },
-    { w: "GINGERBREAD", c: "A house you are actually allowed to eat." },
-    { w: "NIGHTINGALE", c: "A small brown bird with a golden voice." }
+    { w:"MOONLIGHT", d:1, c:"Daylight, after it has thoroughly calmed down." },
+    { w:"BUTTERFLY", d:1, c:"A caterpillar's second, far better idea." },
+    { w:"WHIRLPOOL", d:2, c:"Water going down with a great deal of drama." },
+    { w:"LABYRINTH", d:3, c:"A maze that takes itself very seriously." },
+    { w:"EVERGREEN", d:2, c:"A tree that refuses to admit it's winter." },
+    { w:"SNOWFLAKE", d:1, c:"A tiny promise that no two are alike." },
+    { w:"ADVENTURE", d:1, c:"What you call a plan once it goes wrong." },
+    { w:"WATERFALL", d:1, c:"A river that decided to fall instead." },
+    { w:"NIGHTFALL", d:2, c:"The daily, gentle switching-off of the sky." },
+    { w:"CHRYSALIS", d:3, c:"A quiet waiting-room for a butterfly." },
+    { w:"DANDELION", d:2, c:"A flower that grows up to become a wish." },
+    // --- 10 ---
+    { w:"WILDERNESS", d:2, c:"Land that never learned any manners." },
+    { w:"LIGHTHOUSE", d:1, c:"A tall lamp that worries about ships." },
+    { w:"MOONFLOWER", d:3, c:"A bloom that opens only for the night." },
+    { w:"WILDFLOWER", d:2, c:"A blossom that planted itself, thank you." },
+    { w:"PEPPERMINT", d:1, c:"A cool green whisper of winter." },
+    { w:"ELDERBERRY", d:2, c:"A dark little berry for autumn wine." },
+    { w:"GLASSHOUSE", d:2, c:"A house that lets the weather watch." },
+    { w:"CHANDELIER", d:3, c:"A ceiling dressed up in light." },
+    { w:"MASQUERADE", d:3, c:"A party where nobody admits who they are." },
+    // --- 11 ---
+    { w:"GINGERBREAD", d:1, c:"A house you are actually allowed to eat." },
+    { w:"NIGHTINGALE", d:2, c:"A small brown bird with a golden voice." },
+    { w:"WEATHERVANE", d:2, c:"A metal bird that points at the wind." },
+    { w:"COBBLESTONE", d:2, c:"A round stone the old streets are paved with." },
+    { w:"CANDLELIGHT", d:2, c:"The soft, old-fashioned way to light a room." },
+    // --- 12 ---
+    { w:"THUNDERSTORM", d:1, c:"A storm that announces itself very loudly." },
+    { w:"CANDLESTICKS", d:2, c:"The holders for a dinner's little flames." },
+    { w:"CONSERVATORY", d:2, c:"A glass room built to grow the sun." },
+    { w:"KALEIDOSCOPE", d:3, c:"A tube that turns light into patterns." },
+    { w:"COBBLESTONES", d:2, c:"What the old market square is paved with." },
+    // --- 13 ---
+    { w:"CONSTELLATION", d:2, c:"A join-the-dots picture in the night sky." },
+    { w:"THUNDERSTORMS", d:2, c:"Several loud arguments between clouds." },
+    { w:"ILLUMINATIONS", d:2, c:"The lights a town hangs up for a festival." }
   ];
   const cheers = [
     "The word settles into place, like dusk over a field.",
@@ -991,16 +1006,14 @@
   ];
 
   const MODES = [
-    { id: "gentle", label: "gentle",        min: 4, max: 5,  clue: true,  tiles: true,  mult: 1 },
-    { id: "fuller", label: "a fuller word", min: 6, max: 7,  clue: true,  tiles: true,  mult: 2 },
-    { id: "long",   label: "a long word",   min: 8, max: 12, clue: true,  tiles: true,  mult: 3.5 },
-    { id: "noclue", label: "no clue",       min: 6, max: 9,  clue: false, tiles: true,  mult: 5 },
-    { id: "blind",  label: "no letters",    min: 5, max: 7,  clue: true,  tiles: false, mult: 7 },
-    { id: "deep",   label: "the deep end",  min: 8, max: 12, clue: true,  tiles: false, mult: 12 }
+    { id: "letters",   label: "clue & letters",  clue: true,  pool: true,  factor: 1 },
+    { id: "anagram",   label: "just the letters", clue: false, pool: true,  factor: 1.6 },
+    { id: "crossword", label: "just the clue",    clue: true,  pool: false, factor: 2.2 }
   ];
 
-  let current = null, answer = [], poolLetters = [], wordScore = 0, favourPoints = 0, streak = 0;
-  let currentMode = MODES[0], clueRevealed = true;
+  let current = null, answer = [], poolLetters = [], typed = "";
+  let wordScore = 0, favourPoints = 0, streak = 0, wordLen = 7;
+  let currentMode = MODES[0], clueShown = true, hintLetters = 0, clueHinted = false;
   const clueEl = document.getElementById("clue");
   const slotsEl = document.getElementById("slots");
   const poolEl = document.getElementById("pool");
@@ -1008,9 +1021,9 @@
   const scoreEl = document.getElementById("score");
   const modesEl = document.getElementById("modes");
   const shuffleBtn = document.getElementById("shuffle");
-  const typein = document.getElementById("typein");
-  const typeInput = document.getElementById("typeInput");
-  const typeSubmit = document.getElementById("typeSubmit");
+  const hiddenInput = document.getElementById("hiddenInput");
+  const lenRange = document.getElementById("lenRange");
+  const lenVal = document.getElementById("lenVal");
 
   function buildModes() {
     modesEl.innerHTML = "";
@@ -1018,7 +1031,7 @@
       const b = document.createElement("button");
       b.className = "mode" + (m.id === currentMode.id ? " active" : "");
       b.type = "button";
-      b.innerHTML = m.label + " <span class='mx'>\u00d7" + m.mult + "</span>";
+      b.textContent = m.label;
       b.addEventListener("click", () => {
         if (currentMode.id === m.id) return;
         currentMode = m; buildModes(); newWord(); save();
@@ -1035,63 +1048,89 @@
     } while (out.join("") === word && ++guard < 20);
     return out;
   }
+  function pickWord() {
+    let list = WORDS.filter(x => x.w.length === wordLen);
+    if (list.length < 2) list = WORDS.filter(x => Math.abs(x.w.length - wordLen) <= 1);
+    if (!list.length) list = WORDS;
+    let next; do { next = pick(list); } while (list.length > 1 && current && next.w === current.w);
+    return next;
+  }
   function newWord() {
     const m = currentMode;
-    const list = WORDS.filter(x => x.w.length >= m.min && x.w.length <= m.max);
-    let next; do { next = pick(list); } while (list.length > 1 && current && next.w === current.w);
-    current = next; answer = [];
-    clueRevealed = m.clue;
-    clueEl.textContent = m.clue ? "\u201c" + current.c + "\u201d"
-      : (m.tiles ? "no clue \u2014 go by the letters alone" : "no clue given");
+    current = pickWord();
+    answer = []; typed = ""; hintLetters = 0; clueHinted = false;
+    clueShown = m.clue;
+    clueEl.textContent = m.clue ? "\u201c" + current.c + "\u201d" : "no clue \u2014 from the letters alone";
     clueEl.classList.toggle("noclue", !m.clue);
     statusEl.textContent = "";
     slotsEl.classList.remove("correct", "wrong");
-    typein.classList.remove("correct", "wrong");
-    if (m.tiles) {
+    if (m.pool) {
       poolLetters = scramble(current.w).map(ch => ({ ch, used: false }));
-      slotsEl.style.display = ""; poolEl.style.display = ""; shuffleBtn.style.display = "";
-      typein.style.display = "none";
-      renderWord();
+      poolEl.style.display = ""; shuffleBtn.style.display = "";
+      try { hiddenInput.blur(); } catch (e) {}
     } else {
-      poolLetters = [];
-      slotsEl.style.display = "none"; poolEl.style.display = "none"; shuffleBtn.style.display = "none";
-      typein.style.display = "flex";
-      typeInput.value = "";
-      slotsEl.innerHTML = ""; poolEl.innerHTML = "";
-      setTimeout(() => { try { typeInput.focus(); } catch (e) {} }, 40);
+      poolLetters = []; poolEl.style.display = "none"; poolEl.innerHTML = "";
+      shuffleBtn.style.display = "none";
+      hiddenInput.value = "";
+      setTimeout(() => { try { hiddenInput.focus(); } catch (e) {} }, 40);
     }
+    renderWord();
   }
-  function handleWin() {
-    const m = currentMode;
-    wordScore++; streak++;
-    favourPoints += m.mult;
-    const combo = 1 + 0.2 * Math.min(streak - 1, 10);
-    const base = Math.max(current.w.length * 12, Math.round(cps() * 18));
-    const bonus = Math.round(base * m.mult * combo);
-    addGlimmer(bonus);
-    statusEl.textContent = pick(cheers);
+  function finishWin() {
+    const len = current.w.length;
+    const hintFrac = Math.min(1, hintLetters / len);
+    const fullGiveaway = hintFrac >= 1;
+    wordScore++;
+    if (fullGiveaway) streak = 0; else streak++;
+    const hintPen = Math.pow(Math.max(0, 1 - hintFrac), 2) * (clueHinted ? 0.6 : 1);
+    const combo = 1 + 0.15 * Math.min(Math.max(streak - 1, 0), 8);
+    const lenF = len / 5;
+    const diffF = [0, 1, 1.4, 1.9][current.d || 1];
+    const base = Math.max(len * 8, Math.round(cps() * 12));
+    const bonus = fullGiveaway ? 0 : Math.round(base * currentMode.factor * lenF * diffF * hintPen * combo);
+    if (!fullGiveaway) favourPoints += currentMode.factor * lenF * diffF * hintPen;
     updateWordScore();
-    showElf(current.w, bonus);
-    setTimeout(newWord, 2200);
+    if (bonus > 0) {
+      addGlimmer(bonus);
+      showElf(current.w, bonus);
+      statusEl.textContent = (hintFrac > 0 ? "Solved, with a little help. " : "") + pick(cheers);
+    } else {
+      updateUI();
+      statusEl.textContent = "Given away entirely by hints \u2014 no glimmer this time.";
+    }
+    setTimeout(newWord, 2100);
+  }
+  function failWord(el) {
+    streak = 0;
+    el.classList.add("wrong");
+    statusEl.textContent = "Not quite. Try again, or take a gentle hint.";
+    updateWordScore();
+    setTimeout(() => el.classList.remove("wrong"), 520);
   }
   function renderWord() {
+    const len = current.w.length;
+    const filled = currentMode.pool ? answer.map(a => a.ch) : typed.split("");
     slotsEl.innerHTML = "";
-    for (let i = 0; i < current.w.length; i++) {
-      const entry = answer[i];
+    for (let i = 0; i < len; i++) {
+      const ch = filled[i] || "";
       const slot = document.createElement("button");
-      slot.className = "slot" + (entry ? " filled" : "");
-      slot.textContent = entry ? entry.ch : "";
-      if (entry) slot.addEventListener("click", () => removeAt(i));
+      slot.type = "button";
+      slot.className = "slot" + (ch ? " filled" : "") + (!currentMode.pool && i === typed.length ? " active" : "");
+      slot.textContent = ch;
+      if (currentMode.pool) { if (ch) slot.addEventListener("click", () => removeAt(i)); }
+      else { slot.addEventListener("click", () => { try { hiddenInput.focus(); } catch (e) {} }); }
       slotsEl.appendChild(slot);
     }
-    poolEl.innerHTML = "";
-    poolLetters.forEach((L, idx) => {
-      const t = document.createElement("button");
-      t.className = "tile"; t.textContent = L.ch;
-      t.style.visibility = L.used ? "hidden" : "visible";
-      t.addEventListener("click", () => addLetter(idx));
-      poolEl.appendChild(t);
-    });
+    if (currentMode.pool) {
+      poolEl.innerHTML = "";
+      poolLetters.forEach((L, idx) => {
+        const t = document.createElement("button");
+        t.type = "button"; t.className = "tile"; t.textContent = L.ch;
+        t.style.visibility = L.used ? "hidden" : "visible";
+        t.addEventListener("click", () => addLetter(idx));
+        poolEl.appendChild(t);
+      });
+    }
   }
   function addLetter(i) {
     if (poolLetters[i].used || answer.length >= current.w.length) return;
@@ -1105,30 +1144,12 @@
     slotsEl.classList.remove("wrong"); renderWord();
   }
   function checkWord() {
-    const guess = answer.map(a => a.ch).join("");
-    if (guess === current.w) {
-      slotsEl.classList.add("correct");
-      handleWin();
-    } else {
-      slotsEl.classList.add("wrong"); streak = 0;
-      statusEl.textContent = "Not quite. The elves tilt their heads, kindly. Try again.";
-      updateWordScore();
-      setTimeout(() => slotsEl.classList.remove("wrong"), 520);
-    }
+    if (answer.map(a => a.ch).join("") === current.w) { slotsEl.classList.add("correct"); finishWin(); }
+    else failWord(slotsEl);
   }
-  function submitTyped() {
-    const val = (typeInput.value || "").trim().toUpperCase().replace(/[^A-Z]/g, "");
-    if (!val) return;
-    if (val === current.w) {
-      typein.classList.add("correct");
-      setTimeout(() => typein.classList.remove("correct"), 700);
-      handleWin();
-    } else {
-      typein.classList.add("wrong"); streak = 0;
-      statusEl.textContent = "Not quite. Try again, or take a gentle hint.";
-      updateWordScore();
-      setTimeout(() => typein.classList.remove("wrong"), 520);
-    }
+  function checkTyped() {
+    if (typed === current.w) { slotsEl.classList.add("correct"); finishWin(); }
+    else failWord(slotsEl);
   }
   function updateWordScore() {
     scoreEl.textContent = "words found: " + wordScore + (streak > 1 ? "   \u00b7   " + streak + " in a row" : "");
@@ -1141,17 +1162,16 @@
     slotsEl.classList.remove("correct", "wrong"); renderWord();
   }
   function giveHint() {
-    const m = currentMode;
-    if (!clueRevealed) {                              // reveal the withheld clue
-      clueRevealed = true;
+    const m = currentMode, target = current.w;
+    if (!clueShown) {                       // first hint in a no-clue mode reveals the clue
+      clueShown = true; clueHinted = true;
       clueEl.textContent = "\u201c" + current.c + "\u201d";
       clueEl.classList.remove("noclue");
-      streak = 0; updateWordScore();
-      statusEl.textContent = "A clue, offered \u2014 read it if you like.";
+      updateWordScore();
+      statusEl.textContent = "A clue, offered \u2014 fewer points now.";
       return;
     }
-    if (m.tiles) {
-      const target = current.w;
+    if (m.pool) {
       let i = answer.findIndex((a, idx) => !a || a.ch !== target[idx]);
       if (i === -1) i = answer.length;
       if (i >= target.length) return;
@@ -1159,34 +1179,43 @@
       const need = target[i];
       const pi = poolLetters.findIndex(l => !l.used && l.ch === need);
       if (pi !== -1) { poolLetters[pi].used = true; answer.push({ ch: need, poolIdx: pi }); }
-      streak = 0; updateWordScore();
-      statusEl.textContent = "The next letter, offered softly: \u201c" + need.toLowerCase() + "\u201d.";
+      hintLetters++;
+      statusEl.textContent = "A letter, offered: \u201c" + need.toLowerCase() + "\u201d \u2014 fewer points.";
       renderWord();
-      if (answer.length === current.w.length) checkWord();
+      if (answer.length === target.length) checkWord();
     } else {
-      const cur = (typeInput.value || "").toUpperCase();
-      let i = 0; while (i < cur.length && i < current.w.length && cur[i] === current.w[i]) i++;
-      typeInput.value = current.w.slice(0, i + 1);
-      streak = 0; updateWordScore();
-      statusEl.textContent = "A letter, offered: \u201c" + current.w[i].toLowerCase() + "\u201d.";
-      try { typeInput.focus(); } catch (e) {}
+      let i = 0; while (i < typed.length && i < target.length && typed[i] === target[i]) i++;
+      typed = target.slice(0, i + 1); hiddenInput.value = typed; hintLetters++;
+      statusEl.textContent = "A letter, offered: \u201c" + target[i].toLowerCase() + "\u201d \u2014 fewer points.";
+      renderWord();
+      if (typed.length === target.length) checkTyped();
     }
   }
   document.addEventListener("keydown", (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     const tag = (e.target && e.target.tagName) || "";
     if (tag === "INPUT" || tag === "TEXTAREA") return;
-    if (!currentMode.tiles) return;
+    if (!currentMode.pool) return;   // type-only mode is handled by the hidden input
     const key = e.key.toUpperCase();
     if (/^[A-Z]$/.test(key)) { const i = poolLetters.findIndex(l => !l.used && l.ch === key); if (i !== -1) addLetter(i); }
     else if (e.key === "Backspace") { e.preventDefault(); if (answer.length) removeAt(answer.length - 1); }
     else if (e.key === "Enter" && answer.length === current.w.length) checkWord();
   });
-  document.getElementById("shuffle").addEventListener("click", shufflePool);
+  hiddenInput.addEventListener("input", () => {
+    if (currentMode.pool) return;
+    typed = hiddenInput.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, current.w.length);
+    hiddenInput.value = typed;
+    renderWord();
+    if (typed.length === current.w.length) checkTyped();
+  });
+  hiddenInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); if (!currentMode.pool && typed.length === current.w.length) checkTyped(); }
+  });
+  shuffleBtn.addEventListener("click", shufflePool);
   document.getElementById("hint").addEventListener("click", giveHint);
   document.getElementById("skip").addEventListener("click", newWord);
-  typeSubmit.addEventListener("click", submitTyped);
-  typeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitTyped(); } });
+  lenRange.addEventListener("input", () => { wordLen = parseInt(lenRange.value, 10); lenVal.textContent = wordLen; });
+  lenRange.addEventListener("change", () => { wordLen = parseInt(lenRange.value, 10); lenVal.textContent = wordLen; newWord(); save(); });
 
   /* ================================================================
      INCREMENTAL GAME  (gather the glimmer)
@@ -1335,6 +1364,7 @@
         PRODUCERS.forEach(p => state.counts[p.id] = (s.counts && s.counts[p.id]) || 0);
         wordScore = state.wordScore;
         favourPoints = s.favourPoints || 0;
+        wordLen = s.wordLen || 7;
         const savedMode = MODES.find(m => m.id === s.mode);
         if (savedMode) currentMode = savedMode;
       }
@@ -1344,6 +1374,7 @@
     state.wordScore = wordScore;
     state.favourPoints = favourPoints;
     state.mode = currentMode.id;
+    state.wordLen = wordLen;
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {}
   }
 
@@ -1619,6 +1650,7 @@
   load();
   buildShop();
   buildModes();
+  if (lenRange) { lenRange.value = wordLen; lenVal.textContent = wordLen; }
   updateWordScore();
   updateUI();
   newWord();
