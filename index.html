@@ -1,0 +1,1632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>elfdisco</title>
+<meta name="description" content="A quiet, golden-hour corner of the internet: a word grove and a lantern to tend." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500&family=EB+Garamond:ital@0;1&family=Cinzel:wght@500;600&display=swap" rel="stylesheet" />
+
+<style>
+  :root {
+    --ink:       #4a372a;
+    --ink-soft:  #715847;
+    --parchment: #efe0bd;
+    --panel:     rgba(250, 246, 235, 0.92);
+    --panel-2:   rgba(247, 240, 224, 0.96);
+    --line:      rgba(120, 92, 62, 0.35);
+    --line-soft: rgba(120, 92, 62, 0.18);
+    --accent:    #a9702f;   /* burnt amber */
+    --accent-2:  #7c895f;   /* dusty sage  */
+    --gold:      #c69a4b;
+    --serif:   "EB Garamond", "Palatino Linotype", Georgia, serif;
+    --display: "Cormorant Garamond", "Palatino Linotype", Georgia, serif;
+    --caps:    "Cinzel", "Cormorant Garamond", Georgia, serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { background: #e6e4cb; }
+  html, body {
+    margin: 0; padding: 0;
+    min-height: 100%;
+    font-family: var(--serif);
+    font-size: 18px;
+    color: var(--ink);
+    overflow-x: hidden;
+  }
+  body { background: transparent; }
+
+  /* ---------- watercolour scene ---------- */
+  .scene {
+    position: fixed; inset: 0; z-index: -4; pointer-events: none;
+    display: block; width: 100%; height: 100%;
+  }
+
+  /* faint cold-press paper texture over the painting */
+  .grain {
+    position: fixed; inset: 0; z-index: -2; pointer-events: none;
+    opacity: .06;
+    background-image:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='f'><feTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23f)'/></svg>");
+    background-size: 200px 200px;
+  }
+
+  /* drifting light motes */
+  .motes { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+  .mote {
+    position: absolute; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,248,224,0.95), rgba(255,248,224,0) 70%);
+    animation: floatUp linear infinite;
+    will-change: transform, opacity;
+  }
+  @keyframes floatUp {
+    0%   { transform: translateY(0) translateX(0); opacity: 0; }
+    14%  { opacity: .75; }
+    86%  { opacity: .6; }
+    100% { transform: translateY(-112vh) translateX(var(--sway,20px)); opacity: 0; }
+  }
+
+  .wrap { position: relative; z-index: 1; }
+  .center {
+    max-width: 600px; margin: 0 auto;
+    padding: 22px 20px 80px; text-align: center;
+  }
+  .ball-hint {
+    font-family: var(--display); font-style: italic; font-size: 1.18rem;
+    color: var(--ink-soft); margin: 4px 0 14px;
+    text-shadow: 0 1px 2px rgba(247,240,224,0.85);
+  }
+  #ball { cursor: pointer; }
+  #ball:active { filter: blur(0.6px) drop-shadow(0 12px 14px rgba(50,45,30,0.3)) brightness(1.08); }
+  .wordgame-head {
+    font-family: var(--caps); text-transform: uppercase; letter-spacing: .14em;
+    font-size: .8rem; color: var(--accent); margin: 0 0 12px;
+  }
+  .modes { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; margin: 0 0 18px; }
+  .mode {
+    font-family: var(--display); font-style: italic; font-size: .92rem;
+    border: 1px solid var(--line-soft); background: rgba(255,248,224,0.4);
+    color: var(--ink-soft); padding: 5px 12px; border-radius: 999px; cursor: pointer;
+    transition: background .2s, color .2s, border-color .2s;
+  }
+  .mode:hover { background: rgba(255,248,224,0.8); color: var(--ink); }
+  .mode.active { background: var(--accent); color: #fdf3df; border-color: var(--accent); }
+  .mode .mx { font-style: normal; font-weight: 700; opacity: .8; font-size: .82rem; margin-left: 2px; }
+  .mode.active .mx { opacity: 1; }
+  .clue.noclue { opacity: .6; font-style: italic; }
+  .typein { display: flex; gap: 10px; justify-content: center; align-items: center; margin-bottom: 24px; }
+  .typein input {
+    font-family: var(--display); font-size: 1.6rem; text-align: center; text-transform: uppercase;
+    letter-spacing: .12em; color: var(--ink); width: min(320px, 70%);
+    background: rgba(255,248,224,0.6); border: none; border-bottom: 2px solid var(--line);
+    border-radius: 6px 6px 0 0; padding: 8px 10px; outline: none;
+  }
+  .typein input:focus { border-bottom-color: var(--accent); background: rgba(255,248,224,0.85); }
+  .typein.correct input { border-bottom-color: #7c8a5f; background: rgba(190,199,150,0.35); }
+  .typein.wrong { animation: sway .5s ease; }
+
+  /* ---- wooden workshop (left) ---- */
+  .workshop {
+    position: fixed; left: 20px; top: 20px; width: 322px; z-index: 4;
+    max-height: calc(100vh - 40px); overflow-y: auto;
+    border-radius: 14px; padding: 16px 15px 16px;
+    color: #f4e7cf;
+    background:
+      repeating-linear-gradient(92deg, rgba(255,222,172,0.05) 0 34px, rgba(40,26,14,0.13) 34px 37px),
+      linear-gradient(165deg, #8a6440, #6a4a2c);
+    border: 3px solid #4a3421;
+    box-shadow: 0 16px 40px rgba(40,26,14,0.42), inset 0 2px 0 rgba(255,222,172,0.14);
+  }
+  .workshop::-webkit-scrollbar { width: 9px; }
+  .workshop::-webkit-scrollbar-thumb { background: rgba(40,26,14,0.4); border-radius: 5px; }
+  .workshop-head { text-align: center; margin-bottom: 12px; }
+  .shopkeeper { display: block; width: 150px; height: auto; margin: 0 auto 2px; filter: drop-shadow(0 4px 6px rgba(30,20,10,0.4)); }
+  .workshop h3 { font-family: var(--caps); text-transform: uppercase; letter-spacing: .16em; font-size: .92rem; color: #ffe6bd; margin: 2px 0 6px; }
+  .workshop .shop-note { color: #ecd8b4; opacity: .92; margin: 0 0 12px; font-size: .9rem; text-align: center; }
+  .workshop .polish-btn { display: block; margin: 12px auto 8px; color: #f4e7cf; border-color: rgba(255,230,190,0.4); background: rgba(255,240,214,0.12); }
+  .workshop .polish-btn:hover { background: rgba(255,240,214,0.22); color: #fff; }
+  .workshop .reset-line { margin-top: 12px; }
+  .workshop .reset-line button { color: #ecd8b4; }
+
+  /* ---- ledger (right) ---- */
+  .ledger {
+    position: fixed; right: 20px; top: 20px; width: 252px; z-index: 4;
+    border-radius: 12px; padding: 16px 18px;
+    background: var(--panel); border: 1px solid var(--line);
+    box-shadow: 0 14px 34px rgba(80,56,34,0.2);
+  }
+  .ledger h3 { font-family: var(--caps); text-transform: uppercase; letter-spacing: .16em; font-size: .85rem; color: var(--accent); text-align: center; margin: 0 0 12px; }
+  .ledger-list { margin: 0; }
+  .ledger-list > div { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .ledger-list dt { font-family: var(--display); font-style: italic; color: var(--ink-soft); font-size: .96rem; margin: 0; }
+  .ledger-list dd { margin: 0; font-family: var(--display); font-weight: 700; color: var(--ink); }
+  .ledger-note { font-family: var(--display); font-style: italic; color: var(--ink-soft); font-size: .92rem; text-align: center; margin: 12px 0 4px; }
+  .ledger-foot { font-size: .8rem; color: var(--ink-soft); opacity: .6; text-align: center; font-style: italic; margin: 6px 0 0; }
+
+  @media (max-width: 1240px) {
+    .workshop, .ledger {
+      position: static; width: auto; max-width: min(520px, 94vw); max-height: none;
+      overflow: visible; margin: 26px auto 0;
+    }
+    .wrap { padding-bottom: 80px; }
+  }
+  @media (max-width: 560px) {
+    .center { padding: 18px 12px 60px; }
+    .panel { padding: 24px 16px; }
+    .tile, .slot { width: 40px; height: 48px; font-size: 1.4rem; }
+    .slots, .pool { gap: 7px; min-height: 50px; }
+    .glimmer-count { font-size: 2.3rem; }
+    .clue { font-size: 1.2rem; }
+    .workshop, .ledger { max-width: 94vw; }
+  }
+
+  /* ---------- hanging disco ball (canvas) ---------- */
+  .orb-stage { position: relative; height: 168px; margin-bottom: 4px; }
+  .cord {
+    position: absolute; left: 50%; top: 0; width: 1px; height: 40px;
+    background: linear-gradient(rgba(70,55,40,0.6), rgba(70,55,40,0));
+    transform: translateX(-50%);
+  }
+  .ball-glow {
+    position: absolute; left: 50%; top: 44px; width: 150px; height: 150px;
+    margin-left: -75px; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle, rgba(255,244,214,0.55) 0%, rgba(255,244,214,0) 68%);
+    animation: ballGlow 5s ease-in-out infinite;
+  }
+  @keyframes ballGlow { 0%,100% { opacity: .55; } 50% { opacity: .95; } }
+  #ball {
+    position: absolute; left: 50%; top: 40px;
+    width: 128px; height: 128px; margin-left: -64px;
+    animation: orbBob 6.5s ease-in-out infinite;
+    filter: blur(0.6px) drop-shadow(0 12px 14px rgba(50,45,30,0.3));
+  }
+  @keyframes orbBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(7px); } }
+  .spark {
+    position: absolute; left: 50%; top: 104px; pointer-events: none;
+    width: 4px; height: 4px; margin-left: -2px; border-radius: 50%;
+    background: radial-gradient(circle, #fff6da, rgba(255,246,218,0));
+    transform-origin: 2px -60px;
+    animation: orbit linear infinite;
+  }
+  @keyframes orbit { to { transform: rotate(360deg); } }
+
+  /* ---------- title ---------- */
+  .title {
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(3rem, 12vw, 5.4rem);
+    line-height: 1;
+    letter-spacing: .01em;
+    color: transparent;
+    background: linear-gradient(178deg, #6b4a2c 0%, #9c6f38 45%, #7a5326 70%, #b98a45 100%);
+    -webkit-background-clip: text; background-clip: text;
+    text-shadow: 0 1px 0 rgba(255,247,224,0.4);
+    filter: drop-shadow(0 6px 14px rgba(90,60,30,0.25));
+  }
+  .title .amp {
+    font-family: var(--display); font-style: italic; font-weight: 500;
+  }
+  .flourish {
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+    margin: 10px auto 0; color: var(--accent); opacity: .8;
+  }
+  .flourish::before, .flourish::after {
+    content: ""; height: 1px; width: min(120px, 22vw);
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+  .flourish span { font-family: var(--display); font-size: 1.1rem; letter-spacing: .3em; }
+
+  .tagline {
+    margin: 12px 0 20px;
+    font-family: var(--display);
+    font-style: italic; font-size: 1.3rem;
+    color: var(--ink-soft); min-height: 1.5em;
+    transition: opacity .8s ease;
+    text-shadow: 0 1px 2px rgba(247,240,224,0.85);
+  }
+
+  /* ---------- tabs ---------- */
+  .tabs { display: flex; justify-content: center; gap: 30px; margin-bottom: 16px; }
+  .tab {
+    font-family: var(--caps);
+    background: none; border: none; cursor: pointer;
+    font-size: 1rem; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--ink-soft); padding: 6px 2px; position: relative;
+    transition: color .25s;
+  }
+  .tab::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 1px;
+    background: var(--accent); transform: scaleX(0); transition: transform .3s ease;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab.active { color: var(--accent); }
+  .tab.active::after { transform: scaleX(1); }
+
+  .view { display: none; animation: fadeIn .5s ease; }
+  .view.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* ---------- shared panel ---------- */
+  .panel {
+    position: relative; border-radius: 6px;
+    padding: 32px 26px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    box-shadow: 0 1px 0 rgba(255,247,224,0.55) inset, 0 22px 54px rgba(80,56,34,0.22);
+  }
+
+  /* ---------- word game ---------- */
+  .clue {
+    font-family: var(--display); font-style: italic;
+    font-size: 1.4rem; line-height: 1.5; color: var(--ink);
+    margin: 0 0 24px; min-height: 3em;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .slots, .pool { display: flex; flex-wrap: wrap; gap: 9px; justify-content: center; min-height: 60px; }
+  .slots { margin-bottom: 22px; } .pool { margin-bottom: 26px; }
+
+  .tile {
+    width: 50px; height: 58px;
+    border: 1px solid rgba(120,92,62,0.4); border-radius: 6px;
+    font-family: var(--display); font-size: 1.7rem; font-weight: 600;
+    text-transform: lowercase; color: var(--ink); cursor: pointer;
+    background: linear-gradient(165deg, #fbf1d6, #ecd7ac);
+    box-shadow: 0 3px 8px rgba(90,64,34,0.18), 0 1px 0 rgba(255,255,255,0.55) inset;
+    transition: transform .18s ease, box-shadow .18s ease, opacity .3s;
+  }
+  .tile:hover { transform: translateY(-3px); box-shadow: 0 8px 16px rgba(90,64,34,0.24); }
+  .tile:active { transform: translateY(0); }
+
+  .slot {
+    width: 50px; height: 58px;
+    border: 1px solid transparent; border-bottom: 1.5px solid var(--line); border-radius: 5px;
+    font-family: var(--display); font-size: 1.7rem; font-weight: 600;
+    text-transform: lowercase; background: transparent; color: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .18s ease, background .3s, border-color .3s;
+  }
+  .slot.filled { cursor: pointer; border: 1px solid rgba(120,92,62,0.3); background: rgba(255,248,224,0.5); }
+  .slot.filled:hover { transform: translateY(-2px); }
+  .slots.correct .slot { animation: bloom .6s ease both; border-color: rgba(124,137,95,0.85); background: rgba(190,199,150,0.35); }
+  .slots.wrong { animation: sway .5s ease; }
+  @keyframes bloom { 0%{transform:scale(1);} 45%{transform:scale(1.12);} 100%{transform:scale(1);} }
+  @keyframes sway  { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-5px);} 75%{transform:translateX(5px);} }
+
+  .controls { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    font-family: var(--display); font-style: italic; font-size: 1.05rem;
+    border: 1px solid var(--line); background: rgba(255,248,224,0.35);
+    color: var(--ink-soft); padding: 8px 20px; border-radius: 999px; cursor: pointer;
+    transition: background .25s, color .25s, transform .1s;
+  }
+  .btn:hover { background: rgba(255,248,224,0.75); color: var(--ink); }
+  .btn:active { transform: scale(.97); }
+  .btn:disabled { opacity: .4; cursor: default; }
+
+  .status { margin-top: 20px; min-height: 1.6em; font-family: var(--display); font-style: italic; font-size: 1.15rem; color: var(--ink-soft); }
+  .score  { margin-top: 6px; font-size: .95rem; letter-spacing: .03em; color: var(--ink-soft); opacity: .7; }
+
+  /* ---------- incremental game ---------- */
+  .glimmer-top { display: flex; align-items: baseline; justify-content: center; gap: 10px; margin-bottom: 2px; }
+  .glimmer-count { font-family: var(--display); font-weight: 700; font-size: 2.8rem; color: var(--ink); text-shadow: 0 1px 3px rgba(247,240,224,0.9), 0 2px 10px rgba(247,240,224,0.7); }
+  .glimmer-label { font-family: var(--caps); letter-spacing: .18em; text-transform: uppercase; font-size: .8rem; color: var(--accent); text-shadow: 0 1px 2px rgba(247,240,224,0.9); }
+  .rate { font-family: var(--display); font-style: italic; color: var(--ink-soft); margin-bottom: 8px; text-shadow: 0 1px 2px rgba(247,240,224,0.9); }
+
+  .lantern-area { display: flex; flex-direction: column; align-items: center; margin: 10px 0 8px; }
+  .lantern {
+    position: relative; width: 132px; height: 178px;
+    border: none; background: none; cursor: pointer; padding: 0;
+    transition: transform .1s ease;
+  }
+  .lantern:hover { transform: translateY(-2px); }
+  .lantern:active { transform: scale(0.95); }
+  .lantern-halo {
+    position: absolute; left: 50%; top: 52%; width: 150px; height: 150px;
+    margin: -75px 0 0 -75px; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle, rgba(255,214,130,0.6) 0%, rgba(255,214,130,0) 66%);
+    animation: lanternGlow 4.5s ease-in-out infinite;
+  }
+  @keyframes lanternGlow { 0%,100% { opacity: .55; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
+  .lantern-svg { position: relative; display: block; width: 132px; height: 178px; filter: drop-shadow(0 8px 10px rgba(90,60,30,0.28)); }
+  .lantern-hint { font-family: var(--display); font-style: italic; color: var(--ink-soft); margin: 6px 0 0; }
+
+  .polish-btn { margin: 16px auto 4px; }
+
+  .village-wrap { margin: 6px 0 4px; }
+  .village { display: none; }
+  .village-cap {
+    text-align: center; font-family: var(--display); font-style: italic;
+    color: var(--ink-soft); font-size: 1.05rem; margin: 4px 0 0;
+    text-shadow: 0 1px 2px rgba(247,240,224,0.9);
+  }
+  .lantern-hint { text-shadow: 0 1px 2px rgba(247,240,224,0.85); }
+  .shop-note { text-align: center; font-family: var(--display); font-style: italic; color: var(--ink-soft); font-size: .95rem; margin: -8px 0 16px; opacity: .85; }
+  .shop-panel { max-width: 448px; margin: 22px auto 0; padding: 22px 22px 20px; }
+  .gen.teaser {
+    cursor: default; border-style: dashed; opacity: .8;
+    background: rgba(244,236,220,0.5);
+  }
+  .gen.teaser .glyph { background: radial-gradient(circle at 40% 34%, #e7ddc8, #cbbfa2); color: #8a7a5c; }
+  .gen.teaser .name { color: var(--ink-soft); }
+
+  /* improvements tray (Cookie-Clicker-style upgrade cards) */
+  #improvements { margin-bottom: 8px; }
+  .improve-head { font-family: var(--caps); text-transform: uppercase; letter-spacing: .14em; font-size: .72rem; color: #ffe6bd; text-align: center; margin: 4px 0 8px; opacity: .85; }
+  .gen.improve { background: rgba(255,244,214,0.92); border-color: rgba(180,140,70,0.5); }
+  .gen.improve .glyph { background: radial-gradient(circle at 38% 32%, #fff0c8, #e6b86a); color: #7a5220; }
+  .gen.improve .name { color: #6a4a24; }
+
+  /* the wandering wisp (golden-cookie analogue) */
+  .wisp {
+    position: fixed; left: 0; top: 40vh; z-index: 70;
+    width: 34px; height: 34px; padding: 0; border: none; cursor: pointer;
+    border-radius: 50%; background: transparent;
+    filter: drop-shadow(0 0 10px rgba(255,240,190,0.9));
+  }
+  .wisp::before {
+    content: ""; position: absolute; inset: 0; border-radius: 50%;
+    background: radial-gradient(circle at 42% 38%, #fffdf2 0%, #ffe9a8 40%, rgba(255,214,120,0.5) 66%, rgba(255,214,120,0) 100%);
+    animation: wispPulse 1.4s ease-in-out infinite;
+  }
+  @keyframes wispPulse { 0%,100% { transform: scale(0.85); opacity: .85; } 50% { transform: scale(1.12); opacity: 1; } }
+
+  .frenzy-note { display: none; font-family: var(--display); font-weight: 700; font-style: italic; color: #b06a2f; text-align: center; margin: 10px 0 0; }
+
+  .shop { margin-top: 26px; padding-top: 20px; text-align: left; }
+  .shop h3 {
+    font-family: var(--caps); text-transform: uppercase; letter-spacing: .16em;
+    font-size: .82rem; color: var(--accent); text-align: center; margin: 0 0 16px; font-weight: 600;
+  }
+  .gen {
+    display: flex; align-items: center; gap: 14px; width: 100%;
+    padding: 12px 16px; margin-bottom: 10px;
+    background: var(--panel-2); border: 1px solid var(--line-soft); border-radius: 10px;
+    cursor: pointer; text-align: left; font-family: var(--serif); color: var(--ink);
+    transition: transform .12s ease, box-shadow .2s, border-color .2s, opacity .2s;
+  }
+  .gen:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(90,64,34,0.18); border-color: var(--line); }
+  .gen:active:not(:disabled) { transform: translateY(0); }
+  .gen:disabled { opacity: .55; cursor: default; }
+  .gen .glyph {
+    position: relative;
+    flex: 0 0 46px; height: 46px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 1.35rem;
+    background: radial-gradient(circle at 38% 32%, #fbe6bd, #d8ab63); color: #6b4620;
+    box-shadow: inset -2px -3px 6px rgba(120,74,30,0.35);
+  }
+  /* count badge on the icon */
+  .gen .count {
+    position: absolute; right: -7px; bottom: -7px; min-width: 22px; height: 22px;
+    padding: 0 5px; border-radius: 11px; background: #5f7d6a; color: #fdf6e6;
+    font-family: var(--serif); font-size: .82rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 5px rgba(60,50,30,0.35); border: 1.5px solid #f3ecdb;
+  }
+  .gen .count.zero { background: #b7ad96; }
+  .gen .body { flex: 1 1 auto; display: flex; flex-direction: column; gap: 2px; }
+  .gen .name { font-family: var(--display); font-weight: 600; font-size: 1.24rem; line-height: 1.15; }
+  .gen .desc { font-size: .84rem; color: var(--ink-soft); }
+  .gen .buy { flex: 0 0 auto; text-align: right; }
+  .gen .cost {
+    font-family: var(--display); font-weight: 700; font-size: 1.15rem; color: var(--accent);
+    white-space: nowrap; display: flex; align-items: center; gap: 4px; justify-content: flex-end;
+  }
+  .gen .cost .g { font-size: .95rem; }
+  .gen .cost.cant { color: #b06a4a; }
+  .gen .buylabel { font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); opacity: .7; }
+
+  .float {
+    position: fixed; z-index: 60; pointer-events: none;
+    font-family: var(--display); font-weight: 600; font-size: 1.3rem; color: #7a5220;
+    text-shadow: 0 1px 2px rgba(255,247,224,0.7);
+    animation: floatText 1s ease-out forwards;
+  }
+  @keyframes floatText { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-46px); } }
+  .float.grove { font-size: 1.02rem; color: #5f7d6a; text-shadow: 0 1px 2px rgba(255,247,224,0.8); }
+
+  .reset-line { margin-top: 18px; text-align: center; }
+  .reset-line button { background: none; border: none; color: var(--ink-soft); opacity: .5; font-family: var(--serif); font-style: italic; font-size: .85rem; cursor: pointer; text-decoration: underline; }
+  .reset-line button:hover { opacity: .9; }
+
+  /* ---------- elf ---------- */
+  .elf-stage {
+    position: fixed; right: 26px; bottom: 18px; z-index: 55;
+    width: 150px; pointer-events: none;
+    opacity: 0; transform: translateY(70px) scale(.9);
+    transition: opacity .45s ease, transform .55s cubic-bezier(.18,.9,.28,1.2);
+  }
+  .elf-stage.show { opacity: 1; transform: translateY(0) scale(1); }
+  .bubble {
+    position: absolute; top: -14px; left: 50%; transform: translateX(-55%);
+    background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 12px; padding: 6px 14px; white-space: nowrap;
+    font-family: var(--display); font-weight: 600; color: var(--ink);
+    box-shadow: 0 6px 16px rgba(80,56,34,0.22);
+    font-size: 1.05rem;
+  }
+  .bubble small { display:block; font-weight:500; font-style: italic; font-size: .8rem; color: var(--accent); letter-spacing:.02em; }
+  .bubble::after {
+    content: ""; position: absolute; left: 40%; bottom: -7px; width: 12px; height: 12px;
+    background: var(--panel-2); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    transform: rotate(45deg);
+  }
+  .elf-svg { display: block; width: 150px; height: auto; filter: drop-shadow(0 10px 12px rgba(80,56,34,0.28)); }
+  .elf-bob { animation: elfBob 1.6s ease-in-out infinite; transform-origin: 60px 150px; }
+  @keyframes elfBob { 0%,100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-6px) rotate(1deg); } }
+  .elf-arm { transform-origin: 92px 96px; animation: elfWave 0.7s ease-in-out infinite; }
+  @keyframes elfWave { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(-34deg); } }
+  .elf-sparkle { animation: elfSpark 1.2s ease-in-out infinite; transform-origin: center; }
+  @keyframes elfSpark { 0%,100% { opacity: .3; transform: scale(.7); } 50% { opacity: 1; transform: scale(1.15); } }
+
+  footer { margin-top: 44px; font-family: var(--display); font-style: italic; font-size: .95rem; color: var(--ink-soft); opacity: .6; }
+
+  @media (max-width: 520px) {
+    .elf-stage { width: 110px; right: 10px; } .elf-svg { width: 110px; }
+    .gen .desc { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; } }
+</style>
+</head>
+<body>
+  <canvas id="scene" class="scene" aria-hidden="true"></canvas>
+  <div class="grain"></div>
+  <div class="motes" id="motes"></div>
+
+  <div class="wrap">
+    <main class="center">
+      <div class="orb-stage">
+        <div class="cord"></div>
+        <div class="ball-glow"></div>
+        <canvas id="ball" width="256" height="256" role="button" tabindex="0" aria-label="tap the disco ball to gather glimmer"></canvas>
+        <div class="spark" style="animation-duration:11s"></div>
+        <div class="spark" style="animation-duration:15s; animation-delay:-6s"></div>
+      </div>
+
+      <p class="ball-hint">tap the disco ball to gather the light</p>
+
+      <div class="glimmer-top">
+        <span class="glimmer-count" id="glimmerCount">0</span>
+        <span class="glimmer-label">glimmer</span>
+      </div>
+      <div class="rate" id="rate">gathered by hand, for now</div>
+
+      <div class="panel wordgame">
+        <p class="wordgame-head">guess the word &mdash; each one earns you glimmer</p>
+        <div class="modes" id="modes"></div>
+        <p class="clue" id="clue"></p>
+        <div class="slots" id="slots" aria-label="your word"></div>
+        <div class="pool"  id="pool"  aria-label="letters to choose from"></div>
+        <div class="typein" id="typein">
+          <input id="typeInput" type="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="type the word&hellip;" aria-label="type the word" />
+          <button class="btn" id="typeSubmit">confirm</button>
+        </div>
+        <div class="controls">
+          <button class="btn" id="shuffle">rearrange</button>
+          <button class="btn" id="hint">a gentle hint</button>
+          <button class="btn" id="skip">another word</button>
+        </div>
+        <div class="status" id="status"></div>
+        <div class="score" id="score"></div>
+      </div>
+    </main>
+
+    <aside class="workshop" id="workshop">
+      <div class="workshop-head">
+        <svg class="shopkeeper" viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="26" width="160" height="5" rx="2.5" fill="#4a3421"/>
+          <path d="M150 31 L170 31 L150 53 Z" fill="none" stroke="#4a3421" stroke-width="2.5" stroke-linejoin="round"/>
+          <line x1="46" y1="31" x2="46" y2="55" stroke="#4a3421" stroke-width="3" stroke-linecap="round"/>
+          <rect x="40" y="52" width="13" height="7" rx="2" fill="#4a3421"/>
+          <path d="M64 150 Q60 104 82 96 L118 96 Q140 104 136 150 Z" fill="#5f7387"/>
+          <rect x="84" y="96" width="32" height="26" rx="4" fill="#6a7c90"/>
+          <path d="M89 96 L93 74" stroke="#556579" stroke-width="6" fill="none" stroke-linecap="round"/>
+          <path d="M111 96 L107 74" stroke="#556579" stroke-width="6" fill="none" stroke-linecap="round"/>
+          <circle cx="90" cy="108" r="2.4" fill="#d8ab63"/>
+          <circle cx="110" cy="108" r="2.4" fill="#d8ab63"/>
+          <path d="M66 112 Q52 120 50 134" stroke="#5f7387" stroke-width="12" fill="none" stroke-linecap="round"/>
+          <path d="M134 112 Q148 120 150 134" stroke="#5f7387" stroke-width="12" fill="none" stroke-linecap="round"/>
+          <circle cx="50" cy="136" r="6" fill="#f1d3ad"/>
+          <circle cx="150" cy="136" r="6" fill="#f1d3ad"/>
+          <rect x="93" y="66" width="14" height="14" fill="#f1d3ad"/>
+          <circle cx="100" cy="54" r="23" fill="#f1d3ad"/>
+          <path d="M78 50 Q74 34 90 33 Q84 44 86 56 Z" fill="#ece6da"/>
+          <path d="M122 50 Q126 34 110 33 Q116 44 114 56 Z" fill="#ece6da"/>
+          <path d="M79 40 Q100 28 121 40 Q116 30 100 29 Q84 30 79 40 Z" fill="#ece6da"/>
+          <path d="M87 47 Q91 44 95 47" stroke="#cfc7b6" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+          <path d="M105 47 Q109 44 113 47" stroke="#cfc7b6" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+          <path d="M88 53 Q91 56 94 53" stroke="#5b4227" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M106 53 Q109 56 112 53" stroke="#5b4227" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <circle cx="86" cy="60" r="4.5" fill="#e0a08f" opacity="0.5"/>
+          <circle cx="114" cy="60" r="4.5" fill="#e0a08f" opacity="0.5"/>
+          <path d="M100 55 Q96 62 100 64 Q104 62 100 55" fill="#e6bd97"/>
+          <path d="M80 60 Q84 92 100 93 Q116 92 120 60 Q112 74 100 74 Q88 74 80 60 Z" fill="#ece6da"/>
+        </svg>
+        <h3>The Workshop</h3>
+        <p class="shop-note">the old maker raises whatever you can pay for &mdash; and each thing gives off glimmer of its own.</p>
+      </div>
+      <div id="improvements"></div>
+      <div id="shop"></div>
+      <button class="btn polish-btn" id="polish"></button>
+      <div class="reset-line"><button id="reset">let the light fade (reset)</button></div>
+    </aside>
+
+    <aside class="ledger" id="ledger">
+      <h3>The Ledger</h3>
+      <dl class="ledger-list">
+        <div><dt>glimmer in hand</dt><dd id="ledGlimmer">0</dd></div>
+        <div><dt>flowing / second</dt><dd id="ledRate">0</dd></div>
+        <div><dt>glimmer / tap</dt><dd id="ledTap">1</dd></div>
+        <div><dt>moonlight favour</dt><dd id="ledFavour">&times;1.00</dd></div>
+        <div><dt>wonders raised</dt><dd id="ledWonders">0</dd></div>
+        <div><dt>words guessed</dt><dd id="ledWords">0</dd></div>
+      </dl>
+      <p class="frenzy-note" id="frenzyNote">a wisp's frenzy glows &mdash; &times;7 flow!</p>
+      <p class="ledger-note" id="villageCap">an empty meadow, waiting for the first light</p>
+      <p class="ledger-foot">another corner of the grove is being dreamt up&hellip;</p>
+    </aside>
+
+    <footer>a quiet hour of the internet, kept warm for whoever arrives.</footer>
+  </div>
+
+  <!-- ===== ELF ===== -->
+  <div class="elf-stage" id="elfStage" aria-hidden="true">
+    <div class="bubble" id="elfBubble"></div>
+    <svg class="elf-svg" viewBox="0 0 120 156" xmlns="http://www.w3.org/2000/svg">
+      <g class="elf-bob">
+        <!-- shadow -->
+        <ellipse cx="60" cy="150" rx="30" ry="5" fill="rgba(80,56,34,0.18)"/>
+        <!-- legs -->
+        <rect x="49" y="126" width="9" height="20" rx="4" fill="#5c6b4a"/>
+        <rect x="62" y="126" width="9" height="20" rx="4" fill="#5c6b4a"/>
+        <ellipse cx="52" cy="147" rx="8" ry="5" fill="#4a3524"/>
+        <ellipse cx="68" cy="147" rx="8" ry="5" fill="#4a3524"/>
+        <!-- tunic -->
+        <path d="M40 96 Q60 88 80 96 L86 128 Q60 138 34 128 Z" fill="#7c895f"/>
+        <path d="M40 96 Q60 88 80 96 L82 108 Q60 116 38 108 Z" fill="#8a976c"/>
+        <rect x="34" y="121" width="52" height="7" rx="3.5" fill="#5b4227"/>
+        <circle cx="60" cy="124.5" r="2.6" fill="#d8ab63"/>
+        <!-- left arm (holding lantern) -->
+        <path d="M40 98 Q28 108 30 122" stroke="#7c895f" stroke-width="9" fill="none" stroke-linecap="round"/>
+        <circle cx="30" cy="124" r="5.5" fill="#f6d9b8"/>
+        <!-- tiny lantern -->
+        <g class="elf-sparkle">
+          <rect x="25" y="126" width="10" height="12" rx="2" fill="#c88a3c"/>
+          <rect x="27" y="128" width="6" height="8" rx="1.5" fill="#fff2c2"/>
+          <line x1="30" y1="122" x2="30" y2="126" stroke="#6b4620" stroke-width="1.4"/>
+        </g>
+        <!-- right arm (waving) -->
+        <g class="elf-arm">
+          <path d="M80 98 Q94 92 96 78" stroke="#7c895f" stroke-width="9" fill="none" stroke-linecap="round"/>
+          <circle cx="96" cy="76" r="6" fill="#f6d9b8"/>
+        </g>
+        <!-- ears -->
+        <path d="M36 74 Q28 70 33 82 Q38 82 40 78 Z" fill="#f0cfa6"/>
+        <path d="M84 74 Q92 70 87 82 Q82 82 80 78 Z" fill="#f0cfa6"/>
+        <!-- face -->
+        <ellipse cx="60" cy="76" rx="24" ry="22" fill="#f6d9b8"/>
+        <!-- cheeks -->
+        <circle cx="46" cy="82" r="5" fill="#e0a08f" opacity="0.55"/>
+        <circle cx="74" cy="82" r="5" fill="#e0a08f" opacity="0.55"/>
+        <!-- eyes (gentle, closed & happy) -->
+        <path d="M48 74 Q52 78 56 74" stroke="#5b4227" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M64 74 Q68 78 72 74" stroke="#5b4227" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <!-- smile -->
+        <path d="M53 86 Q60 92 67 86" stroke="#8a5a3a" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <!-- hat -->
+        <path id="hatMain" d="M34 62 Q60 52 86 62 Q80 30 60 16 Q44 34 34 62 Z" fill="#a85d54"/>
+        <path id="hatShade" d="M34 62 Q60 52 86 62 Q84 56 82 52 Q60 46 38 52 Q36 57 34 62 Z" fill="#8f4a43"/>
+        <ellipse cx="34" cy="62" rx="7" ry="5" fill="#f2e3c4"/>
+        <circle cx="60" cy="15" r="5" fill="#f2e3c4"/>
+      </g>
+    </svg>
+  </div>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ---------------- background motes ---------------- */
+  const moteLayer = document.getElementById("motes");
+  for (let i = 0; i < 8; i++) {
+    const m = document.createElement("div");
+    m.className = "mote";
+    const size = 3 + Math.random() * 6;
+    m.style.width = size + "px"; m.style.height = size + "px";
+    m.style.left = (Math.random() * 100).toFixed(1) + "vw";
+    m.style.top = (100 + Math.random() * 30) + "vh";
+    m.style.setProperty("--sway", (Math.random() * 80 - 40).toFixed(0) + "px");
+    const dur = 18 + Math.random() * 22;
+    m.style.animationDuration = dur.toFixed(1) + "s";
+    m.style.animationDelay = (-Math.random() * dur).toFixed(1) + "s";
+    moteLayer.appendChild(m);
+  }
+
+  const rnd = n => Math.floor(Math.random() * n);
+  const pick = a => a[rnd(a.length)];
+
+  /* ---------------- full-screen watercolour scene + grove (canvas) ---------------- */
+  let villageItems = [];
+  let redrawScene = () => {};
+  (function sceneGrove() {
+    const c = document.getElementById("scene");
+    if (!c || !c.getContext) return;
+    const ctx = c.getContext("2d");
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const bg = document.createElement("canvas");
+    const bctx = bg.getContext("2d");
+    let W = 0, H = 0, DPR = 1, slots = [];
+
+    // hills sit higher so the lower third is open meadow for the grove
+    const layers = [
+      { y: 0.34, amp: 0.045, col: "#b4c4b8", ph: 0.4 },
+      { y: 0.46, amp: 0.055, col: "#9db2a2", ph: 1.9 },
+      { y: 0.58, amp: 0.050, col: "#829b89", ph: 3.3 },
+      { y: 0.70, amp: 0.055, col: "#647f6c", ph: 5.1 },
+      { y: 0.82, amp: 0.055, col: "#54715e", ph: 6.7 }
+    ];
+
+    function paintBg() {
+      bg.width = Math.round(W * DPR); bg.height = Math.round(H * DPR);
+      bctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      const w = W, h = H;
+      const sky = bctx.createLinearGradient(0, 0, 0, h);
+      sky.addColorStop(0, "#f5eed9"); sky.addColorStop(0.38, "#ece8cd"); sky.addColorStop(0.66, "#dde3d1"); sky.addColorStop(1, "#c7d5c6");
+      bctx.fillStyle = sky; bctx.fillRect(0, 0, w, h);
+      const sg = bctx.createRadialGradient(w*0.76, h*0.18, 8, w*0.76, h*0.18, Math.max(w,h)*0.55);
+      sg.addColorStop(0, "rgba(255,246,214,0.72)"); sg.addColorStop(0.4, "rgba(255,238,196,0.22)"); sg.addColorStop(1, "rgba(255,238,196,0)");
+      bctx.fillStyle = sg; bctx.fillRect(0, 0, w, h);
+      layers.forEach(L => {
+        const baseY = h*L.y, amp = h*L.amp;
+        bctx.save(); bctx.filter = "blur(2.4px)";
+        bctx.beginPath(); bctx.moveTo(-30, h+30); bctx.lineTo(-30, baseY);
+        for (let x=-30;x<=w+30;x+=22){
+          const yy = baseY + Math.sin(x*0.0055+L.ph)*amp*0.6 + Math.sin(x*0.013+L.ph*2.1)*amp*0.3 + Math.sin(x*0.029+L.ph*3.7)*amp*0.12;
+          bctx.lineTo(x, yy);
+        }
+        bctx.lineTo(w+30, h+30); bctx.closePath(); bctx.fillStyle = L.col; bctx.fill(); bctx.restore();
+      });
+      // winding stream across the meadow
+      bctx.save(); bctx.lineCap = "round";
+      bctx.strokeStyle = "rgba(150,182,178,0.85)"; bctx.lineWidth = Math.max(10, h*0.02);
+      bctx.beginPath();
+      for (let x=-20;x<=w+20;x+=16){ const yy = h*0.9 + Math.sin(x*0.004+0.6)*h*0.02; x===-20?bctx.moveTo(x,yy):bctx.lineTo(x,yy); }
+      bctx.stroke(); bctx.restore();
+      // mist
+      bctx.save(); bctx.filter = "blur(22px)"; bctx.globalAlpha = 0.5; bctx.fillStyle = "#f4f1e6";
+      [[0.30,0.42],[0.72,0.56],[0.45,0.70]].forEach(([fx,fy]) => { bctx.beginPath(); bctx.ellipse(w*fx, h*fy, w*0.28, h*0.02, 0, 0, 7); bctx.fill(); });
+      bctx.restore();
+    }
+
+    function makeSlots() {
+      slots = [];
+      const rows = [
+        { y: 0.94, s: 1.00, n: 12 },
+        { y: 0.865, s: 0.82, n: 11 },
+        { y: 0.80, s: 0.66, n: 13 },
+        { y: 0.745, s: 0.54, n: 12 }
+      ];
+      rows.forEach((r, ri) => {
+        for (let i=0;i<r.n;i++){
+          const x = (i + (ri % 2 ? 0.5 : 0)) / r.n;
+          slots.push({ x: 0.03 + x*0.94, y: r.y, s: r.s });
+        }
+      });
+    }
+
+    function ensureSize() {
+      const dpr = Math.min(1.5, window.devicePixelRatio || 1);   // cap resolution — full-screen canvas
+      const w = window.innerWidth, h = window.innerHeight;
+      if (w === W && h === H && dpr === DPR) return;
+      W = w; H = h; DPR = dpr;
+      c.width = Math.round(w*dpr); c.height = Math.round(h*dpr);
+      c.style.width = w+"px"; c.style.height = h+"px";
+      paintBg(); makeSlots();
+    }
+
+    function draw(t) {
+      ensureSize();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, c.width, c.height);
+      ctx.drawImage(bg, 0, 0);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+      const placed = [];
+      PRODUCERS.forEach(p => { const n = state.counts[p.id] || 0; for (let i=0;i<n;i++) placed.push(p); });
+      const items = placed.map((s, i) => {
+        const slot = slots[i % slots.length];
+        const wrap = Math.floor(i / slots.length);
+        return { s, x: slot.x*W + (wrap ? wrap*8 : 0), y: slot.y*H, sc: slot.s*(wrap ? 0.9 : 1) };
+      }).sort((a, b) => a.y - b.y);
+      villageItems = items;
+
+      const pulse = 0.5 + 0.5*Math.sin(t*0.0025);
+      const spin = reduce ? 0.6 : t*0.0012;
+      items.forEach(it => {
+        ctx.save();
+        ctx.translate(it.x, it.y); ctx.scale(it.sc, it.sc);
+        ctx.fillStyle = "rgba(45,55,38,0.16)"; ctx.beginPath(); ctx.ellipse(0, 1, 16, 4, 0, 0, 7); ctx.fill();
+        it.s.draw(ctx, pulse, spin);
+        ctx.restore();
+      });
+    }
+
+    // the scene is static — redrawn only when the grove changes or the window resizes,
+    // so there is no continuous full-screen repaint eating CPU/GPU.
+    redrawScene = () => draw(performance.now());
+    let rt;
+    window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(redrawScene, 150); });
+  })();
+
+  /* ---------------- disco ball (canvas, watercolour) ----------------
+     Facet grid on a sphere, painted in soft muted washes then blurred
+     for a hand-painted feel. Turns gently around the vertical axis.   */
+  (function discoBall() {
+    const cv = document.getElementById("ball");
+    if (!cv || !cv.getContext) return;
+    const ctx = cv.getContext("2d");
+    const S = cv.width;
+    const cx = S / 2, cy = S / 2;
+    const R = S * 0.42;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const lx = -0.4, ly = 0.5, lz = 0.78;
+    const ll = Math.hypot(lx, ly, lz);
+    const L = [lx / ll, ly / ll, lz / ll];
+
+    // muted watercolour pigments (dusty, low-saturation, harmonised with the hills)
+    const pigments = [
+      [176, 190, 170], // sage
+      [206, 186, 150], // soft ochre
+      [198, 172, 168], // dusty rose
+      [172, 186, 200], // pale slate blue
+      [214, 200, 172], // sand
+      [166, 188, 182]  // teal-grey
+    ];
+
+    const bands = 20;
+    const facets = [];
+    for (let i = 0; i < bands; i++) {
+      const lat = (-0.5 + (i + 0.5) / bands) * Math.PI * 0.95;
+      const cosLat = Math.cos(lat), sinLat = Math.sin(lat);
+      const nLon = Math.max(8, Math.round(34 * cosLat));
+      for (let j = 0; j < nLon; j++) {
+        facets.push({
+          lon0: (j / nLon) * Math.PI * 2,
+          sinLat, cosLat,
+          w: Math.PI * 2 / nLon,
+          h: Math.PI * 0.95 / bands,
+          ph: Math.random() * Math.PI * 2,
+          sp: 0.3 + Math.random() * 0.8,
+          pig: pick(pigments)
+        });
+      }
+    }
+
+    function draw(t) {
+      const rot = reduce ? 0.7 : t * 0.00028;
+      ctx.clearRect(0, 0, S, S);
+      // soft base sphere so gaps read as a rounded ball
+      const base = ctx.createRadialGradient(cx - R*0.3, cy - R*0.32, R*0.15, cx, cy, R);
+      base.addColorStop(0, "#c9c6d0");
+      base.addColorStop(1, "#7f7c8c");
+      ctx.fillStyle = base;
+      ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
+
+      for (const f of facets) {
+        const lon = f.lon0 + rot;
+        const x = f.cosLat * Math.sin(lon);
+        const y = f.sinLat;
+        const z = f.cosLat * Math.cos(lon);
+        if (z <= 0.03) continue;
+        const sx = cx + x * R, sy = cy - y * R;
+        const d = x * L[0] + y * L[1] + z * L[2];
+        let b = 0.6 + 0.4 * Math.max(0, d);
+        const tw = 0.5 + 0.5 * Math.sin(t * 0.0016 * f.sp + f.ph);
+        b = Math.min(1.08, b + tw * 0.06);
+        const fw = f.cosLat * f.w * R * (0.55 + 0.45 * z);
+        const w = Math.max(1.4, fw * 0.9);
+        const h = Math.max(1.4, f.h * R * 0.9);
+        const r = Math.min(255, Math.round(f.pig[0] * b + 26));
+        const g = Math.min(255, Math.round(f.pig[1] * b + 26));
+        const bl = Math.min(255, Math.round(f.pig[2] * b + 26));
+        ctx.fillStyle = "rgb(" + r + "," + g + "," + bl + ")";
+        ctx.fillRect(sx - w / 2, sy - h / 2, w, h);
+      }
+
+      // luminous wash where the light falls
+      const hs = ctx.createRadialGradient(cx - R*0.3, cy - R*0.34, 1, cx - R*0.3, cy - R*0.34, R*0.95);
+      hs.addColorStop(0, "rgba(255,251,236,0.5)");
+      hs.addColorStop(1, "rgba(255,251,236,0)");
+      ctx.fillStyle = hs;
+      ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
+
+      // soft pigment pooling at the rim
+      const rim = ctx.createRadialGradient(cx, cy, R * 0.62, cx, cy, R);
+      rim.addColorStop(0, "rgba(70,80,86,0)");
+      rim.addColorStop(1, "rgba(70,80,86,0.34)");
+      ctx.fillStyle = rim;
+      ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
+    }
+    // soft edges come from a one-time CSS blur on the canvas; animate at ~30fps
+    if (reduce) { draw(0); }
+    else { let lastBall = 0; (function loop(t) { requestAnimationFrame(loop); if (t - lastBall < 66) return; lastBall = t; draw(t); })(0); }
+  })();
+
+  /* ---------------- shared: the elf ---------------- */
+  const elfStage  = document.getElementById("elfStage");
+  const elfBubble = document.getElementById("elfBubble");
+  const hatMainEl  = document.getElementById("hatMain");
+  const hatShadeEl = document.getElementById("hatShade");
+  const hatColors = ["#a85d54", "#7c895f", "#8a6ea8", "#b0823f", "#5f7f8a"];
+  const hatShade  = { "#a85d54":"#8f4a43", "#7c895f":"#68764e", "#8a6ea8":"#735a8c", "#b0823f":"#946a2f", "#5f7f8a":"#4d6a73" };
+  let elfTimer = null;
+  function showElf(word, bonus) {
+    const c = pick(hatColors);
+    hatMainEl.setAttribute("fill", c);
+    hatShadeEl.setAttribute("fill", hatShade[c]);
+    elfBubble.innerHTML = word.toLowerCase() + "<small>+" + fmt(bonus) + " glimmer</small>";
+    elfStage.classList.remove("show");
+    void elfStage.offsetWidth;
+    elfStage.classList.add("show");
+    clearTimeout(elfTimer);
+    elfTimer = setTimeout(() => elfStage.classList.remove("show"), 2900);
+  }
+
+  /* ================================================================
+     WORD GAME
+  ================================================================ */
+  const WORDS = [
+    // --- 4 ---
+    { w: "MOON",  c: "The night's one good lamp." },
+    { w: "LEAF",  c: "A tree's smallest, most numerous flag." },
+    { w: "ECHO",  c: "A sound that insists on having the last word." },
+    { w: "TIDE",  c: "The sea, breathing slowly in and out." },
+    { w: "GLEN",  c: "A small valley, tucked out of the wind." },
+    { w: "WISP",  c: "A thread of smoke, or a trick of the marsh-light." },
+    { w: "FERN",  c: "A leaf that uncurls like a question mark." },
+    { w: "DUSK",  c: "The day, dimming its own lights." },
+    { w: "HALO",  c: "A ring of light that follows the good." },
+    { w: "OPAL",  c: "A stone that keeps a rainbow indoors." },
+    { w: "MOSS",  c: "A green hush that grows on old stone." },
+    { w: "SNOW",  c: "The sky's quiet way of tidying up." },
+    // --- 5 ---
+    { w: "EMBER", c: "The fire's quiet way of saying goodnight." },
+    { w: "AMBER", c: "A summer afternoon, kept in a stone." },
+    { w: "BROOK", c: "A stream too small to take seriously." },
+    { w: "FROST", c: "Winter's handwriting on the window." },
+    { w: "CHIME", c: "A bell's short, polite sentence." },
+    { w: "MIRTH", c: "Laughter, before it grows up." },
+    { w: "QUILL", c: "A feather that learned to write." },
+    { w: "MAPLE", c: "The tree that bleeds sweetness." },
+    { w: "CIDER", c: "Autumn, poured into a cup." },
+    { w: "RAVEN", c: "A black bird with a taste for riddles." },
+    { w: "CLOUD", c: "A daydream the sky is having." },
+    { w: "RIVER", c: "A road that carries itself along." },
+    { w: "PETAL", c: "A flower's soft, falling coin." },
+    { w: "COMET", c: "A star with somewhere else to be." },
+    { w: "GROVE", c: "A small, secret gathering of trees." },
+    { w: "HONEY", c: "Summer, thickened slowly into gold." },
+    // --- 6 ---
+    { w: "WILLOW", c: "The tree that learned to bow and never stopped." },
+    { w: "MEADOW", c: "Where the afternoon goes to lie down." },
+    { w: "VELVET", c: "The softest word for something worth keeping." },
+    { w: "HEARTH", c: "Home, if home were a warm and glowing thing." },
+    { w: "CANDLE", c: "A small, patient flame with a job to do." },
+    { w: "MARBLE", c: "A tiny frozen galaxy you can hold." },
+    { w: "BREEZE", c: "The wind, being gentle for once." },
+    { w: "SILVER", c: "The moon's favourite colour." },
+    { w: "GARDEN", c: "A tidy argument between you and nature." },
+    { w: "AUTUMN", c: "The year, letting go, beautifully." },
+    { w: "FOREST", c: "A crowd of trees keeping their counsel." },
+    { w: "RIDDLE", c: "A question wearing a clever disguise." },
+    { w: "TINSEL", c: "Silver rain that never reaches the ground." },
+    { w: "SPRITE", c: "A small spirit with a fondness for mischief." },
+    { w: "WINTER", c: "The season that keeps the fire busy." },
+    { w: "FROLIC", c: "Joy that refuses to sit still." },
+    // --- 7 ---
+    { w: "GLIMMER", c: "The last of the light, reluctant to leave." },
+    { w: "LANTERN", c: "A jar that decided to keep a little sun." },
+    { w: "WHISPER", c: "A voice folded small enough to fit in your ear." },
+    { w: "REVERIE", c: "A daydream you didn't mean to wander into." },
+    { w: "SHIMMER", c: "Light, doing its quiet best to be noticed." },
+    { w: "LULLABY", c: "A song built to be forgotten, gently." },
+    { w: "CRIMSON", c: "Red, dressed in its Sunday best." },
+    { w: "COMPASS", c: "It always knows which way is home." },
+    { w: "ECLIPSE", c: "When the moon photobombs the sun." },
+    { w: "HARVEST", c: "Autumn's reward for a summer of patience." },
+    { w: "MYSTERY", c: "A locked door with the key left nearby." },
+    { w: "JOURNEY", c: "The long way round that becomes the point." },
+    { w: "ORCHARD", c: "A field where apples wait to be picked." },
+    { w: "FIREFLY", c: "A star too impatient to wait for night." },
+    { w: "MERMAID", c: "Half a sailor's dream, half a fish." },
+    { w: "RAINBOW", c: "A bridge the rain builds and never crosses." },
+    { w: "TWINKLE", c: "The small, private wink of a star." },
+    // --- 8 ---
+    { w: "TWILIGHT", c: "The blue hour between the day and its dreams." },
+    { w: "MISCHIEF", c: "An elf's favourite way to pass an evening." },
+    { w: "STARDUST", c: "Sweepings from a galaxy that keeps tidy." },
+    { w: "MOONBEAM", c: "The lamp the night hangs out for free." },
+    { w: "SNOWFALL", c: "The sky, quietly emptying its pockets." },
+    { w: "DAYDREAM", c: "A short holiday the mind takes alone." },
+    { w: "LAVENDER", c: "A purple that smells like calm." },
+    { w: "MARIGOLD", c: "A flower the colour of a small sun." },
+    { w: "SEASHELL", c: "The sea's tiny, spiralling souvenir." },
+    { w: "HEIRLOOM", c: "A thing that quietly outlives its owners." },
+    { w: "CINNAMON", c: "A spice that tastes like a warm memory." },
+    { w: "DAFFODIL", c: "Spring's first yellow trumpet." },
+    { w: "BLUEBELL", c: "A woodland flower that rings without a sound." },
+    { w: "PINECONE", c: "A tree's small, scaly parcel of seeds." },
+    // --- 9 ---
+    { w: "MOONLIGHT", c: "Daylight, after it has thoroughly calmed down." },
+    { w: "BUTTERFLY", c: "A caterpillar's second, far better idea." },
+    { w: "WHIRLPOOL", c: "Water going down with a great deal of drama." },
+    { w: "LABYRINTH", c: "A maze that takes itself very seriously." },
+    { w: "EVERGREEN", c: "A tree that refuses to admit it's winter." },
+    { w: "SNOWFLAKE", c: "A tiny promise that no two are alike." },
+    { w: "ADVENTURE", c: "What you call a plan once it goes wrong." },
+    { w: "WATERFALL", c: "A river that decided to fall instead." },
+    { w: "NIGHTFALL", c: "The daily, gentle switching-off of the sky." },
+    { w: "CHRYSALIS", c: "A quiet waiting-room for a butterfly." },
+    { w: "DANDELION", c: "A flower that grows up to become a wish." },
+    // --- 10+ ---
+    { w: "WILDERNESS", c: "Land that never learned any manners." },
+    { w: "LIGHTHOUSE", c: "A tall lamp that worries about ships." },
+    { w: "MOONFLOWER", c: "A bloom that opens only for the night." },
+    { w: "WILDFLOWER", c: "A blossom that planted itself, thank you." },
+    { w: "PEPPERMINT", c: "A cool green whisper of winter." },
+    { w: "GINGERBREAD", c: "A house you are actually allowed to eat." },
+    { w: "NIGHTINGALE", c: "A small brown bird with a golden voice." }
+  ];
+  const cheers = [
+    "The word settles into place, like dusk over a field.",
+    "Yes. Somewhere a lantern glows a shade warmer.",
+    "Lovely. The elves nod, quietly pleased.",
+    "There it is. The afternoon holds still a moment.",
+    "Just so. A soft rain of petals, then quiet again."
+  ];
+
+  const MODES = [
+    { id: "gentle", label: "gentle",        min: 4, max: 5,  clue: true,  tiles: true,  mult: 1 },
+    { id: "fuller", label: "a fuller word", min: 6, max: 7,  clue: true,  tiles: true,  mult: 2 },
+    { id: "long",   label: "a long word",   min: 8, max: 12, clue: true,  tiles: true,  mult: 3.5 },
+    { id: "noclue", label: "no clue",       min: 6, max: 9,  clue: false, tiles: true,  mult: 5 },
+    { id: "blind",  label: "no letters",    min: 5, max: 7,  clue: true,  tiles: false, mult: 7 },
+    { id: "deep",   label: "the deep end",  min: 8, max: 12, clue: true,  tiles: false, mult: 12 }
+  ];
+
+  let current = null, answer = [], poolLetters = [], wordScore = 0, favourPoints = 0, streak = 0;
+  let currentMode = MODES[0], clueRevealed = true;
+  const clueEl = document.getElementById("clue");
+  const slotsEl = document.getElementById("slots");
+  const poolEl = document.getElementById("pool");
+  const statusEl = document.getElementById("status");
+  const scoreEl = document.getElementById("score");
+  const modesEl = document.getElementById("modes");
+  const shuffleBtn = document.getElementById("shuffle");
+  const typein = document.getElementById("typein");
+  const typeInput = document.getElementById("typeInput");
+  const typeSubmit = document.getElementById("typeSubmit");
+
+  function buildModes() {
+    modesEl.innerHTML = "";
+    MODES.forEach(m => {
+      const b = document.createElement("button");
+      b.className = "mode" + (m.id === currentMode.id ? " active" : "");
+      b.type = "button";
+      b.innerHTML = m.label + " <span class='mx'>\u00d7" + m.mult + "</span>";
+      b.addEventListener("click", () => {
+        if (currentMode.id === m.id) return;
+        currentMode = m; buildModes(); newWord(); save();
+      });
+      modesEl.appendChild(b);
+    });
+  }
+
+  function scramble(word) {
+    const letters = word.split(""); let out, guard = 0;
+    do {
+      out = letters.slice();
+      for (let i = out.length - 1; i > 0; i--) { const j = rnd(i + 1); [out[i], out[j]] = [out[j], out[i]]; }
+    } while (out.join("") === word && ++guard < 20);
+    return out;
+  }
+  function newWord() {
+    const m = currentMode;
+    const list = WORDS.filter(x => x.w.length >= m.min && x.w.length <= m.max);
+    let next; do { next = pick(list); } while (list.length > 1 && current && next.w === current.w);
+    current = next; answer = [];
+    clueRevealed = m.clue;
+    clueEl.textContent = m.clue ? "\u201c" + current.c + "\u201d"
+      : (m.tiles ? "no clue \u2014 go by the letters alone" : "no clue given");
+    clueEl.classList.toggle("noclue", !m.clue);
+    statusEl.textContent = "";
+    slotsEl.classList.remove("correct", "wrong");
+    typein.classList.remove("correct", "wrong");
+    if (m.tiles) {
+      poolLetters = scramble(current.w).map(ch => ({ ch, used: false }));
+      slotsEl.style.display = ""; poolEl.style.display = ""; shuffleBtn.style.display = "";
+      typein.style.display = "none";
+      renderWord();
+    } else {
+      poolLetters = [];
+      slotsEl.style.display = "none"; poolEl.style.display = "none"; shuffleBtn.style.display = "none";
+      typein.style.display = "flex";
+      typeInput.value = "";
+      slotsEl.innerHTML = ""; poolEl.innerHTML = "";
+      setTimeout(() => { try { typeInput.focus(); } catch (e) {} }, 40);
+    }
+  }
+  function handleWin() {
+    const m = currentMode;
+    wordScore++; streak++;
+    favourPoints += m.mult;
+    const combo = 1 + 0.2 * Math.min(streak - 1, 10);
+    const base = Math.max(current.w.length * 12, Math.round(cps() * 18));
+    const bonus = Math.round(base * m.mult * combo);
+    addGlimmer(bonus);
+    statusEl.textContent = pick(cheers);
+    updateWordScore();
+    showElf(current.w, bonus);
+    setTimeout(newWord, 2200);
+  }
+  function renderWord() {
+    slotsEl.innerHTML = "";
+    for (let i = 0; i < current.w.length; i++) {
+      const entry = answer[i];
+      const slot = document.createElement("button");
+      slot.className = "slot" + (entry ? " filled" : "");
+      slot.textContent = entry ? entry.ch : "";
+      if (entry) slot.addEventListener("click", () => removeAt(i));
+      slotsEl.appendChild(slot);
+    }
+    poolEl.innerHTML = "";
+    poolLetters.forEach((L, idx) => {
+      const t = document.createElement("button");
+      t.className = "tile"; t.textContent = L.ch;
+      t.style.visibility = L.used ? "hidden" : "visible";
+      t.addEventListener("click", () => addLetter(idx));
+      poolEl.appendChild(t);
+    });
+  }
+  function addLetter(i) {
+    if (poolLetters[i].used || answer.length >= current.w.length) return;
+    poolLetters[i].used = true; answer.push({ ch: poolLetters[i].ch, poolIdx: i });
+    renderWord();
+    if (answer.length === current.w.length) checkWord();
+  }
+  function removeAt(i) {
+    const e = answer[i]; if (!e) return;
+    poolLetters[e.poolIdx].used = false; answer.splice(i, 1);
+    slotsEl.classList.remove("wrong"); renderWord();
+  }
+  function checkWord() {
+    const guess = answer.map(a => a.ch).join("");
+    if (guess === current.w) {
+      slotsEl.classList.add("correct");
+      handleWin();
+    } else {
+      slotsEl.classList.add("wrong"); streak = 0;
+      statusEl.textContent = "Not quite. The elves tilt their heads, kindly. Try again.";
+      updateWordScore();
+      setTimeout(() => slotsEl.classList.remove("wrong"), 520);
+    }
+  }
+  function submitTyped() {
+    const val = (typeInput.value || "").trim().toUpperCase().replace(/[^A-Z]/g, "");
+    if (!val) return;
+    if (val === current.w) {
+      typein.classList.add("correct");
+      setTimeout(() => typein.classList.remove("correct"), 700);
+      handleWin();
+    } else {
+      typein.classList.add("wrong"); streak = 0;
+      statusEl.textContent = "Not quite. Try again, or take a gentle hint.";
+      updateWordScore();
+      setTimeout(() => typein.classList.remove("wrong"), 520);
+    }
+  }
+  function updateWordScore() {
+    scoreEl.textContent = "words found: " + wordScore + (streak > 1 ? "   \u00b7   " + streak + " in a row" : "");
+  }
+  function shufflePool() {
+    answer = [];
+    const chars = poolLetters.map(l => l.ch);
+    for (let i = chars.length - 1; i > 0; i--) { const j = rnd(i + 1); [chars[i], chars[j]] = [chars[j], chars[i]]; }
+    poolLetters = chars.map(ch => ({ ch, used: false }));
+    slotsEl.classList.remove("correct", "wrong"); renderWord();
+  }
+  function giveHint() {
+    const m = currentMode;
+    if (!clueRevealed) {                              // reveal the withheld clue
+      clueRevealed = true;
+      clueEl.textContent = "\u201c" + current.c + "\u201d";
+      clueEl.classList.remove("noclue");
+      streak = 0; updateWordScore();
+      statusEl.textContent = "A clue, offered \u2014 read it if you like.";
+      return;
+    }
+    if (m.tiles) {
+      const target = current.w;
+      let i = answer.findIndex((a, idx) => !a || a.ch !== target[idx]);
+      if (i === -1) i = answer.length;
+      if (i >= target.length) return;
+      for (let k = answer.length - 1; k >= i; k--) { poolLetters[answer[k].poolIdx].used = false; answer.pop(); }
+      const need = target[i];
+      const pi = poolLetters.findIndex(l => !l.used && l.ch === need);
+      if (pi !== -1) { poolLetters[pi].used = true; answer.push({ ch: need, poolIdx: pi }); }
+      streak = 0; updateWordScore();
+      statusEl.textContent = "The next letter, offered softly: \u201c" + need.toLowerCase() + "\u201d.";
+      renderWord();
+      if (answer.length === current.w.length) checkWord();
+    } else {
+      const cur = (typeInput.value || "").toUpperCase();
+      let i = 0; while (i < cur.length && i < current.w.length && cur[i] === current.w[i]) i++;
+      typeInput.value = current.w.slice(0, i + 1);
+      streak = 0; updateWordScore();
+      statusEl.textContent = "A letter, offered: \u201c" + current.w[i].toLowerCase() + "\u201d.";
+      try { typeInput.focus(); } catch (e) {}
+    }
+  }
+  document.addEventListener("keydown", (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const tag = (e.target && e.target.tagName) || "";
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    if (!currentMode.tiles) return;
+    const key = e.key.toUpperCase();
+    if (/^[A-Z]$/.test(key)) { const i = poolLetters.findIndex(l => !l.used && l.ch === key); if (i !== -1) addLetter(i); }
+    else if (e.key === "Backspace") { e.preventDefault(); if (answer.length) removeAt(answer.length - 1); }
+    else if (e.key === "Enter" && answer.length === current.w.length) checkWord();
+  });
+  document.getElementById("shuffle").addEventListener("click", shufflePool);
+  document.getElementById("hint").addEventListener("click", giveHint);
+  document.getElementById("skip").addEventListener("click", newWord);
+  typeSubmit.addEventListener("click", submitTyped);
+  typeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitTyped(); } });
+
+  /* ================================================================
+     INCREMENTAL GAME  (gather the glimmer)
+  ================================================================ */
+  const SAVE_KEY = "elfdisco.save.v3";
+
+  /* everything you can raise in the grove — each produces glimmer on its own.
+     ordered cheapest first; all appear in the meadow scene.                  */
+  const PRODUCERS = [
+    { id: "firefly",  glyph: "\u2726", name: "Firefly Jar",   desc: "a jar of tiny drifting lights",   base: 15,          rate: 0.1,     draw: drawFireflyJar },
+    { id: "toadstool",glyph: "\u2618", name: "Toadstool",     desc: "a merry spotted mushroom",        base: 100,         rate: 1,       draw: drawMushroom },
+    { id: "willow",   glyph: "\u2663", name: "Willow",        desc: "a soft green tree for the meadow",base: 1100,        rate: 8,       draw: drawWillow },
+    { id: "lamp",     glyph: "\u2738", name: "Lamp Post",     desc: "lights the path after dusk",      base: 12000,       rate: 47,      draw: drawLamp },
+    { id: "cottage",  glyph: "\u2302", name: "Cottage",       desc: "a warm home with a lit window",   base: 130000,      rate: 260,     draw: drawCottage },
+    { id: "well",     glyph: "\u2668", name: "Wishing Well",  desc: "draws glimmer up from below",     base: 1400000,     rate: 1400,    draw: drawWell },
+    { id: "bridge",   glyph: "\u2323", name: "Stone Bridge",  desc: "carries the road over the stream",base: 20000000,    rate: 7800,    draw: drawBridge },
+    { id: "mill",     glyph: "\u2733", name: "Windmill",      desc: "turns the breeze into light",     base: 330000000,   rate: 44000,   draw: drawMill },
+    { id: "tower",    glyph: "\u265c", name: "Watchtower",    desc: "a tall spire gathering the dawn", base: 5100000000,  rate: 260000,  draw: drawTower },
+    { id: "fountain", glyph: "\u26f2", name: "Star Fountain", desc: "a spring that wells up in colour",base: 75000000000, rate: 1600000, draw: drawFountain }
+  ];
+
+  /* per-producer improvements: each DOUBLES that producer's output, unlocked by ownership */
+  const UP_TIERS = [
+    { at: 10,  costX: 10,     label: "tended" },
+    { at: 25,  costX: 100,    label: "blessed" },
+    { at: 50,  costX: 1200,   label: "moonlit" },
+    { at: 100, costX: 15000,  label: "hallowed" },
+    { at: 150, costX: 200000, label: "wondrous" }
+  ];
+  PRODUCERS.forEach(p => {
+    p.up = UP_TIERS.map((t, i) => ({
+      id: p.id + "_" + i, pid: p.id, at: t.at, mult: 2,
+      cost: Math.ceil(p.base * t.costX),
+      name: t.label + " " + p.name.toLowerCase()
+    }));
+  });
+
+  /* --- watercolour sprites: drawn with ground point at local (0,0), facing up --- */
+  function drawWillow(c) {
+    c.fillStyle = "#6e5334"; c.fillRect(-3, -30, 6, 30);
+    c.fillStyle = "#7d9a86";
+    [[-14,-40,16,14],[13,-42,16,14],[-8,-33,14,12],[10,-33,14,12]].forEach(([x,y,rx,ry]) => { c.beginPath(); c.ellipse(x,y,rx,ry,0,0,7); c.fill(); });
+    c.fillStyle = "#90af96"; c.beginPath(); c.ellipse(-1,-50,19,15,0,0,7); c.fill();
+    c.fillStyle = "#6f8f79"; c.beginPath(); c.ellipse(6,-44,11,10,0,0,7); c.fill();
+  }
+  function drawLamp(c, pulse) {
+    c.fillStyle = "rgba(255,221,140," + (0.30 * pulse).toFixed(3) + ")"; c.beginPath(); c.arc(9,-46,15,0,7); c.fill();
+    c.strokeStyle = "#463522"; c.lineWidth = 3; c.lineCap = "round";
+    c.beginPath(); c.moveTo(0,0); c.lineTo(0,-40); c.quadraticCurveTo(4,-46,9,-45); c.stroke();
+    c.fillStyle = "#43331f"; c.fillRect(5,-52,9,4);
+    c.fillStyle = "#c88a3c"; c.fillRect(5,-49,9,9);
+    c.fillStyle = "rgba(255,236,168," + (0.6 + 0.4*pulse).toFixed(3) + ")"; c.fillRect(6.5,-47.5,6,6);
+    c.fillStyle = "#43331f"; c.fillRect(-4,-2,8,3);
+  }
+  function drawCottage(c, pulse) {
+    c.fillStyle = "#e7d4a6"; c.fillRect(-20,-34,40,34);
+    c.fillStyle = "#b06b52"; c.beginPath(); c.moveTo(-24,-33); c.lineTo(0,-52); c.lineTo(24,-33); c.closePath(); c.fill();
+    c.fillStyle = "#8a6a45"; c.fillRect(9,-50,6,11);
+    c.fillStyle = "#6b4f34"; c.fillRect(-6,-18,12,18);
+    c.fillStyle = "rgba(255,221,140," + (0.5 + 0.45*pulse).toFixed(3) + ")"; c.fillRect(8,-27,9,9);
+    c.strokeStyle = "#9a7b52"; c.lineWidth = 1.5; c.strokeRect(8,-27,9,9);
+  }
+  function drawWell(c) {
+    c.fillStyle = "#bcb29a"; c.beginPath(); c.moveTo(-14,0); c.lineTo(14,0); c.lineTo(11,-16); c.lineTo(-11,-16); c.closePath(); c.fill();
+    c.fillStyle = "#8fb0ad"; c.beginPath(); c.ellipse(0,-16,11,3.6,0,0,7); c.fill();
+    c.strokeStyle = "#6b4f34"; c.lineWidth = 3; c.beginPath(); c.moveTo(-9,-16); c.lineTo(-9,-40); c.moveTo(9,-16); c.lineTo(9,-40); c.stroke();
+    c.fillStyle = "#9a6b45"; c.beginPath(); c.moveTo(-14,-38); c.lineTo(0,-50); c.lineTo(14,-38); c.closePath(); c.fill();
+  }
+  function drawBridge(c) {
+    c.strokeStyle = "#b6aa8c"; c.lineWidth = 6; c.beginPath(); c.arc(0,-1,20,Math.PI,0); c.stroke();
+    c.strokeStyle = "#a58a5c"; c.lineWidth = 3; c.beginPath(); c.moveTo(-25,-19); c.quadraticCurveTo(0,-30,25,-19); c.stroke();
+    c.strokeStyle = "#8f7649"; c.lineWidth = 2;
+    [-18,-8,8,18].forEach(x => { const y = -19 - (1 - Math.abs(x)/25)*9; c.beginPath(); c.moveTo(x,y); c.lineTo(x,y-6); c.stroke(); });
+  }
+  function drawMill(c, pulse, spin) {
+    c.fillStyle = "#d8cbb0"; c.beginPath(); c.moveTo(-14,0); c.lineTo(14,0); c.lineTo(10,-40); c.lineTo(-10,-40); c.closePath(); c.fill();
+    c.fillStyle = "#8a6a45"; c.beginPath(); c.moveTo(-12,-40); c.lineTo(0,-53); c.lineTo(12,-40); c.closePath(); c.fill();
+    c.fillStyle = "rgba(255,221,140,0.7)"; c.fillRect(-4,-30,8,9);
+    c.save(); c.translate(0,-44); c.rotate(spin);
+    c.strokeStyle = "#5b4636"; c.lineWidth = 2.4;
+    for (let k = 0; k < 4; k++) { c.rotate(Math.PI/2); c.beginPath(); c.moveTo(0,0); c.lineTo(0,-17); c.stroke(); }
+    c.restore();
+    c.fillStyle = "#5b4636"; c.beginPath(); c.arc(0,-44,2.4,0,7); c.fill();
+  }
+  function drawTower(c, pulse) {
+    c.fillStyle = "#cfc3a8"; c.fillRect(-11,-50,22,50);
+    [-11,-4,3].forEach(x => c.fillRect(x,-56,5,6));
+    c.fillStyle = "#5b4636"; c.fillRect(-5,-14,10,14);
+    c.fillStyle = "rgba(255,221,140," + (0.4 + 0.4*pulse).toFixed(3) + ")"; c.fillRect(-4,-36,8,9);
+    c.strokeStyle = "#5b4636"; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0,-56); c.lineTo(0,-68); c.stroke();
+    c.fillStyle = "#a85d54"; c.beginPath(); c.moveTo(0,-68); c.lineTo(11,-65); c.lineTo(0,-61.5); c.closePath(); c.fill();
+  }
+  function drawFireflyJar(c, pulse) {
+    c.fillStyle = "rgba(255,230,150," + (0.28*pulse).toFixed(3) + ")"; c.beginPath(); c.arc(0,-12,15,0,7); c.fill();
+    c.fillStyle = "rgba(206,222,216,0.55)";
+    c.beginPath(); c.moveTo(-9,0); c.lineTo(-9,-17); c.quadraticCurveTo(-9,-24,0,-24); c.quadraticCurveTo(9,-24,9,-17); c.lineTo(9,0); c.closePath(); c.fill();
+    c.strokeStyle = "rgba(150,170,160,0.6)"; c.lineWidth = 1; c.stroke();
+    c.fillStyle = "#6b4f34"; c.fillRect(-8,-27,16,4);
+    c.fillStyle = "rgba(255,232,150," + (0.6 + 0.4*pulse).toFixed(3) + ")";
+    [[-3,-10],[3,-15],[0,-6],[4,-9],[-4,-16]].forEach(([x,y]) => { c.beginPath(); c.arc(x,y,1.7,0,7); c.fill(); });
+  }
+  function drawMushroom(c) {
+    c.fillStyle = "#efe6cf"; c.fillRect(-3,-14,6,14);
+    c.fillStyle = "#b0574a";
+    c.beginPath(); c.moveTo(-13,-13); c.quadraticCurveTo(0,-32,13,-13); c.closePath(); c.fill();
+    c.fillStyle = "rgba(245,236,210,0.92)";
+    [[-5,-16,1.7],[3,-19,1.5],[7,-14,1.4],[-1,-22,1.3]].forEach(([x,y,r]) => { c.beginPath(); c.arc(x,y,r,0,7); c.fill(); });
+  }
+  function drawFountain(c, pulse) {
+    c.fillStyle = "#bcb29a"; c.beginPath(); c.ellipse(0,-4,20,6,0,0,7); c.fill();
+    c.fillStyle = "#8fb0ad"; c.beginPath(); c.ellipse(0,-6,16,4,0,0,7); c.fill();
+    c.fillStyle = "#cabfa4"; c.fillRect(-3,-30,6,24);
+    c.beginPath(); c.ellipse(0,-30,9,3,0,0,7); c.fill();
+    c.strokeStyle = "rgba(180,210,205," + (0.5 + 0.4*pulse).toFixed(3) + ")"; c.lineWidth = 2; c.lineCap = "round";
+    c.beginPath(); c.moveTo(0,-32); c.quadraticCurveTo(-12,-44,-13,-10); c.stroke();
+    c.beginPath(); c.moveTo(0,-32); c.quadraticCurveTo(12,-44,13,-10); c.stroke();
+    c.fillStyle = "rgba(232,246,240," + (0.6 + 0.4*pulse).toFixed(3) + ")"; c.beginPath(); c.arc(0,-40,3,0,7); c.fill();
+  }
+
+
+  let state = {
+    glimmer: 0,
+    clickBase: 1,
+    clickPct: 0,
+    polishCount: 0,
+    counts: {},
+    ups: {},
+    revealed: {},
+    wordScore: 0
+  };
+  PRODUCERS.forEach(p => state.counts[p.id] = 0);
+  let frenzyUntil = 0, frenzyMult = 1;   // temporary "wisp" boost (not saved)
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (raw) {
+        const s = JSON.parse(raw);
+        state.glimmer = s.glimmer || 0;
+        state.clickBase = s.clickBase || 1;
+        state.clickPct = s.clickPct || 0;
+        state.polishCount = s.polishCount || 0;
+        state.wordScore = s.wordScore || 0;
+        state.revealed = s.revealed || {};
+        state.ups = s.ups || {};
+        PRODUCERS.forEach(p => state.counts[p.id] = (s.counts && s.counts[p.id]) || 0);
+        wordScore = state.wordScore;
+        favourPoints = s.favourPoints || 0;
+        const savedMode = MODES.find(m => m.id === s.mode);
+        if (savedMode) currentMode = savedMode;
+      }
+    } catch (e) { /* ignore corrupt save */ }
+  }
+  function save() {
+    state.wordScore = wordScore;
+    state.favourPoints = favourPoints;
+    state.mode = currentMode.id;
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  const glimmerCountEl = document.getElementById("glimmerCount");
+  const rateEl = document.getElementById("rate");
+  const shopEl = document.getElementById("shop");
+  const improvementsEl = document.getElementById("improvements");
+  const villageCap = document.getElementById("villageCap");
+  const polishBtn = document.getElementById("polish");
+  const ballBtn = document.getElementById("ball");
+  const ledGlimmer = document.getElementById("ledGlimmer");
+  const ledRate = document.getElementById("ledRate");
+  const ledWonders = document.getElementById("ledWonders");
+  const ledWords = document.getElementById("ledWords");
+  const ledTap = document.getElementById("ledTap");
+  const ledFavour = document.getElementById("ledFavour");
+  const frenzyNote = document.getElementById("frenzyNote");
+
+  function fmt(n) {
+    if (n < 1000) return (Math.round(n * 10) / 10).toString().replace(/\.0$/, "");
+    const units = ["K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc"];
+    let u = -1;
+    while (n >= 1000 && u < units.length - 1) { n /= 1000; u++; }
+    return n.toFixed(2) + units[u];
+  }
+  function prodCost(p) { return Math.ceil(p.base * Math.pow(1.15, state.counts[p.id])); }
+  function polishCost() { return Math.ceil(100 * Math.pow(6.5, state.polishCount)); }
+  function prodMult(p) { let m = 1; for (const u of p.up) if (state.ups[u.id]) m *= u.mult; return m; }
+  function moonlight() { return 1 + 0.015 * favourPoints; }         // harder words earn more favour
+  function frenzyBoost() { return performance.now() < frenzyUntil ? frenzyMult : 1; }
+  function baseFlow() { return PRODUCERS.reduce((sum, p) => sum + p.rate * state.counts[p.id] * prodMult(p), 0); }
+  function cps() { return baseFlow() * moonlight() * frenzyBoost(); }
+  function clickValue() { return state.clickBase + state.clickPct * cps(); }
+  function totalOwned() { return PRODUCERS.reduce((n, p) => n + state.counts[p.id], 0); }
+
+  /* progressively reveal producers so the late game stays a mystery */
+  function refreshReveal() {
+    PRODUCERS.forEach((p, i) => {
+      if (state.revealed[p.id]) return;
+      const prev = i > 0 ? PRODUCERS[i - 1] : null;
+      if (i === 0 || state.counts[p.id] > 0 || state.glimmer >= p.base * 0.45 || (prev && state.counts[prev.id] > 0)) {
+        state.revealed[p.id] = true;
+      }
+    });
+  }
+
+  function addGlimmer(n) { state.glimmer += n; updateUI(); }
+
+  function buildShop() {
+    shopEl.innerHTML = "";
+    PRODUCERS.forEach(p => {
+      const btn = document.createElement("button");
+      btn.className = "gen"; btn.dataset.id = p.id;
+      btn.innerHTML =
+        '<span class="glyph">' + p.glyph + '<span class="count zero">0</span></span>' +
+        '<span class="body"><span class="name">' + p.name + '</span>' +
+        '<span class="desc">' + p.desc + ' \u00b7 makes ' + fmt(p.rate) + ' \u2726/s</span></span>' +
+        '<span class="buy"><span class="buylabel">raise for</span>' +
+        '<span class="cost"><span class="g">\u2726</span><span class="camt">0</span></span></span>';
+      btn.addEventListener("click", () => buyProducer(p));
+      shopEl.appendChild(btn);
+    });
+    const teaser = document.createElement("div");
+    teaser.className = "gen teaser"; teaser.id = "shopTeaser";
+    teaser.innerHTML =
+      '<span class="glyph">?</span>' +
+      '<span class="body"><span class="name">something else waits\u2026</span>' +
+      '<span class="desc">keep gathering, and it will show itself</span></span>';
+    shopEl.appendChild(teaser);
+  }
+  function buyProducer(p) {
+    const cost = prodCost(p);
+    if (state.glimmer < cost) return;
+    state.glimmer -= cost; state.counts[p.id]++;
+    updateUI(); redrawScene(); save();
+  }
+  function buyUpgrade(u) {
+    if (state.ups[u.id]) return;
+    if (state.counts[u.pid] < u.at || state.glimmer < u.cost) return;
+    state.glimmer -= u.cost; state.ups[u.id] = true;
+    updateUI(); save();
+  }
+  function buyPolish() {
+    const cost = polishCost();
+    if (state.glimmer < cost) return;
+    state.glimmer -= cost;
+    state.polishCount++;
+    state.clickBase *= 2;
+    state.clickPct = Math.min(0.30, state.clickPct + 0.01);
+    updateUI(); save();
+  }
+
+  /* available improvements (unlocked, unbought) — themed like Cookie Clicker's upgrade tray */
+  function availableUpgrades() {
+    const list = [];
+    PRODUCERS.forEach(p => {
+      if (!state.revealed[p.id]) return;
+      p.up.forEach(u => { if (!state.ups[u.id] && state.counts[p.id] >= u.at) list.push({ p, u }); });
+    });
+    return list.sort((a, b) => a.u.cost - b.u.cost);
+  }
+  let lastImproveSig = "";
+  function renderImprovements() {
+    if (!improvementsEl) return;
+    const list = availableUpgrades();
+    const sig = list.map(x => x.u.id + (state.glimmer >= x.u.cost ? "+" : "-")).join(",");
+    if (sig === lastImproveSig) return;   // only rebuild when something actually changed
+    lastImproveSig = sig;
+    improvementsEl.innerHTML = "";
+    if (!list.length) { improvementsEl.style.display = "none"; return; }
+    improvementsEl.style.display = "block";
+    const head = document.createElement("p");
+    head.className = "improve-head"; head.textContent = "improvements";
+    improvementsEl.appendChild(head);
+    list.forEach(({ p, u }) => {
+      const btn = document.createElement("button");
+      btn.className = "gen improve"; btn.dataset.up = u.id;
+      const affordable = state.glimmer >= u.cost;
+      btn.disabled = !affordable;
+      btn.innerHTML =
+        '<span class="glyph">\u2733</span>' +
+        '<span class="body"><span class="name">' + u.name + '</span>' +
+        '<span class="desc">doubles what each ' + p.name.toLowerCase() + ' makes</span></span>' +
+        '<span class="buy"><span class="buylabel">buy for</span>' +
+        '<span class="cost' + (affordable ? '' : ' cant') + '"><span class="g">\u2726</span>' + fmt(u.cost) + '</span></span>';
+      btn.addEventListener("click", () => buyUpgrade(u));
+      improvementsEl.appendChild(btn);
+    });
+  }
+
+  function updateUI() {
+    refreshReveal();
+    glimmerCountEl.textContent = fmt(state.glimmer);
+    const rate = cps();
+    const inFrenzy = performance.now() < frenzyUntil;
+    rateEl.textContent = rate > 0
+      ? fmt(rate) + " glimmer flowing in each second, all on its own"
+      : "gathered by hand, for now \u2014 raise something below to make it flow on its own";
+    polishBtn.innerHTML = "polish the ball &nbsp;\u00b7&nbsp; \u00d72 per tap &nbsp;\u00b7&nbsp; \u2726 " + fmt(polishCost());
+    polishBtn.disabled = state.glimmer < polishCost();
+    shopEl.querySelectorAll(".gen[data-id]").forEach(btn => {
+      const p = PRODUCERS.find(x => x.id === btn.dataset.id);
+      if (!state.revealed[p.id]) { btn.style.display = "none"; return; }
+      btn.style.display = "flex";
+      const cost = prodCost(p);
+      const owned = state.counts[p.id];
+      btn.disabled = state.glimmer < cost;
+      const cnt = btn.querySelector(".count");
+      cnt.textContent = owned;
+      cnt.classList.toggle("zero", owned === 0);
+      btn.querySelector(".camt").textContent = fmt(cost);
+      btn.querySelector(".cost").classList.toggle("cant", state.glimmer < cost);
+    });
+    const teaser = document.getElementById("shopTeaser");
+    if (teaser) teaser.style.display = PRODUCERS.some(p => !state.revealed[p.id]) ? "flex" : "none";
+    renderImprovements();
+    const built = totalOwned();
+    villageCap.textContent = built === 0
+      ? "an empty meadow, waiting for the first light"
+      : (built === 1 ? "your grove begins \u2014 one small wonder"
+         : "a grove of " + built + " wonders, and growing");
+    // ledger
+    ledGlimmer.textContent = fmt(state.glimmer);
+    ledRate.textContent = fmt(rate);
+    ledWonders.textContent = built;
+    ledWords.textContent = wordScore;
+    ledTap.textContent = fmt(clickValue());
+    if (ledFavour) ledFavour.textContent = "\u00d7" + moonlight().toFixed(2);
+    if (frenzyNote) frenzyNote.style.display = inFrenzy ? "block" : "none";
+  }
+
+  function floatText(x, y, text, grove) {
+    const el = document.createElement("div");
+    el.className = grove ? "float grove" : "float"; el.textContent = text;
+    el.style.left = x + "px"; el.style.top = y + "px";
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+  }
+  ballBtn.addEventListener("click", (e) => {
+    const v = clickValue();
+    state.glimmer += v;
+    floatText(e.clientX - 10, e.clientY - 20, "+" + fmt(v));
+    updateUI();
+  });
+  ballBtn.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      const v = clickValue();
+      state.glimmer += v;
+      const r = ballBtn.getBoundingClientRect();
+      floatText(r.left + r.width/2 - 10, r.top + r.height/2, "+" + fmt(v));
+      updateUI();
+    }
+  });
+  polishBtn.addEventListener("click", buyPolish);
+  document.getElementById("reset").addEventListener("click", () => {
+    if (confirm("Let the light fade and begin again? This clears your glimmer and your whole grove.")) {
+      state.glimmer = 0; state.clickBase = 1; state.clickPct = 0; state.polishCount = 0;
+      PRODUCERS.forEach(p => state.counts[p.id] = 0);
+      state.ups = {};
+      state.revealed = {};
+      frenzyUntil = 0; frenzyMult = 1;
+      favourPoints = 0; wordScore = 0; streak = 0;
+      updateWordScore();
+      updateUI(); redrawScene(); save();
+    }
+  });
+
+  /* (the grove is now painted directly onto the full-screen scene above) */
+
+  /* floating "+" numbers rising off the grove, so you SEE glimmer being made */
+  (function productionFloats() {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    setInterval(() => {
+      if (!villageItems.length) return;
+      const n = 1 + Math.floor(Math.random() * 2);
+      for (let k = 0; k < n; k++) {
+        const it = villageItems[Math.floor(Math.random() * villageItems.length)];
+        floatText(it.x + (Math.random() * 14 - 7), it.y - 30, "+" + fmt(it.s.rate), true);
+      }
+    }, 620);
+  })();
+
+  /* the wandering wisp — our "golden cookie": drifts across now and then for a boon */
+  (function wisps() {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    function grant(x, y) {
+      if (Math.random() < 0.5) {
+        frenzyUntil = performance.now() + 45000; frenzyMult = 7;
+        floatText(x, y, "\u2726 frenzy! \u00d77 flow", true);
+      } else {
+        const lump = Math.max(cps() * 300, clickValue() * 60, 40);
+        state.glimmer += lump;
+        floatText(x, y, "+" + fmt(lump) + " \u2726", true);
+      }
+      updateUI(); save();
+    }
+    function spawn() {
+      const el = document.createElement("button");
+      el.className = "wisp"; el.setAttribute("aria-label", "a wandering wisp \u2014 tap it for a boon");
+      el.style.top = (22 + Math.random() * 52).toFixed(1) + "vh";
+      const fromLeft = Math.random() < 0.5;
+      const startX = fromLeft ? -70 : window.innerWidth + 70;
+      const endX = fromLeft ? window.innerWidth + 70 : -70;
+      document.body.appendChild(el);
+      let taken = false;
+      const anim = el.animate(
+        [{ transform: "translateX(" + startX + "px)" }, { transform: "translateX(" + endX + "px)" }],
+        { duration: 11000, easing: "linear" }
+      );
+      el.addEventListener("click", () => {
+        if (taken) return; taken = true;
+        const r = el.getBoundingClientRect();
+        grant(r.left, r.top);
+        anim.cancel(); el.remove();
+      });
+      anim.onfinish = () => el.remove();
+    }
+    function loop() { spawn(); setTimeout(loop, 80000 + Math.random() * 90000); }
+    setTimeout(loop, 45000);
+  })();
+
+  /* passive production — a light 10fps tick is smooth enough and spares the CPU */
+  let last = performance.now();
+  function tick() {
+    const now = performance.now();
+    const dt = (now - last) / 1000; last = now;
+    if (dt > 0 && dt < 5) state.glimmer += cps() * dt;
+    updateUI();
+  }
+
+  /* ---------------- boot ---------------- */
+  load();
+  buildShop();
+  buildModes();
+  updateWordScore();
+  updateUI();
+  newWord();
+  redrawScene();
+  setInterval(tick, 100);
+  setInterval(save, 5000);
+  window.addEventListener("beforeunload", save);
+})();
+</script>
+</body>
+</html>
