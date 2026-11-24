@@ -40,7 +40,8 @@
   }
 
   *{box-sizing:border-box} html,body{margin:0}
-  body{font-family:"Inter",system-ui,sans-serif;color:var(--ink);font-size:16px;line-height:1.55;min-height:100vh;background:var(--page);background-attachment:fixed}
+  body{font-family:"Inter",system-ui,sans-serif;color:var(--ink);font-size:16px;line-height:1.55;min-height:100vh;background:var(--page);background-attachment:fixed;overflow-x:hidden}
+  .card .ti{overflow-wrap:anywhere}
   a{color:var(--claret)}
   .topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--bar);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
   .topbar .brand{font-family:"Fraunces";font-weight:600;color:var(--claret-deep);text-decoration:none;font-size:1.05rem}
@@ -142,6 +143,16 @@
   .modal .x{float:right;cursor:pointer;color:var(--soft);border:none;background:none;font-size:1.3rem}
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--claret-deep);color:#fff;padding:11px 18px;border-radius:10px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:.92rem}
   .spin{text-align:center;color:var(--soft);padding:60px 0}
+  @media (max-width:560px){
+    .wrap{padding:24px 14px 80px}
+    h1.title{font-size:2.3rem}
+    .card{flex-wrap:wrap;padding:13px 14px}
+    .card .actions{flex:0 0 100%;flex-direction:row;align-self:stretch;margin-top:11px}
+    .card .actions > *{flex:1;text-align:center}
+    .topbar{padding:10px 12px}
+    .topbar .brand{font-size:.95rem}
+    .guide{padding:10px 14px}
+  }
 </style>
 </head>
 <body>
@@ -551,7 +562,6 @@
     const hint = isOwner ? "" : `<div class="hint">Pick something and mark it so nobody doubles up — ${esc(owner.display_name)} can't see what's been taken, so the surprise stays safe.</div>`;
 
     app.innerHTML = `<div class="wrap">
-      <div class="kicker">${esc(owner.display_name)}${list.is_archived?" · archived":"'s list"}</div>
       <h1 class="title" ${editing?'contenteditable id="editTitle"':''}>${esc(list.title)}</h1>
       <div class="sub" ${editing?'contenteditable id="editSub"':''}>${esc(list.subtitle||(editing?"add a subtitle…":""))}</div>
       <div class="rule"></div>
@@ -611,7 +621,7 @@
     } else if(i.taken){
       status=`<div class="claimer"><span class="chip taken-chip">taken</span>${i.taken_note?' '+esc(i.taken_note):''}</div>`;
     } else if(!editing){
-      actions=`<button class="get" data-claim="${i.id}">I'll get this</button>`;
+      actions=`<button class="get" data-claim="${i.id}">Get this</button>`;
     }
     const kids = state.items.filter(c=>c.parent_id===i.id && !c.archived && (!c.hidden || (isOwner && editing))).sort((a,b)=>a.position-b.position);
     const kidHTML = kids.length ? `<div class="subitems">${kids.map(c=>renderItem(c,depth+1)).join("")}</div>` : "";
