@@ -78,7 +78,7 @@
   .group.dragging{opacity:.4}
   .grouphead{display:flex;align-items:center;gap:7px;margin-bottom:6px}
   .grouplabel{font-size:.68rem;letter-spacing:.1em;font-weight:700;color:var(--gold)}
-  .grouplabel[contenteditable]{outline:none;border-bottom:1px dashed rgba(200,154,78,.55);cursor:text;padding-bottom:1px}
+  .grouplabel.editable{cursor:pointer;border-bottom:1px dashed rgba(200,154,78,.55);padding-bottom:1px}
   .groupzone{min-height:6px}
   .card .price{flex:0 0 auto;width:50px;padding-top:3px}
   .card .b{flex:1 1 auto;min-width:0}
@@ -579,7 +579,7 @@
       const members=u.items.slice().sort((a,b)=>a.position-b.position);
       const label=(members.find(x=>x.link_label)||{}).link_label || 'Linked';
       return `<div class="group" data-group="${u.key}" ${editing?'draggable="true"':''}>
-        <div class="grouphead">${editing?'<span class="grip" title="Drag the whole group">⋮⋮</span>':''}<span class="grouplabel" ${editing?`contenteditable data-grouplabel="${u.key}" title="Click to rename this group"`:''}>${esc(label)}</span></div>
+        <div class="grouphead">${editing?'<span class="grip" title="Drag the whole group">⋮⋮</span>':''}<span class="grouplabel ${editing?'editable':''}" ${editing?`data-grouplabel="${u.key}" title="Rename group"`:''}>${esc(label)}${editing?' ✎':''}</span></div>
         <div class="groupzone" data-group="${u.key}">${members.map(m=>renderItem(m,0)).join("")}</div>
       </div>`;
     }).join("");
@@ -660,11 +660,7 @@
       app.querySelectorAll("[data-unarc]").forEach(b=> b.onclick=()=>archiveItem(b.dataset.unarc, false));
       app.querySelectorAll("[data-delsec]").forEach(b=> b.onclick=()=>delSection(b.dataset.delsec));
       app.querySelectorAll("[data-secwarn]").forEach(b=> b.onclick=()=>sectionWarnModal(b.dataset.secwarn));
-      app.querySelectorAll("[data-grouplabel]").forEach(el=> el.onblur=()=>{
-        const v=el.textContent.trim(); const lbl=(v && v.toLowerCase()!=='linked') ? v : null;
-        state.items.forEach(it=>{ if(it.link_group===el.dataset.grouplabel) it.link_label=lbl; });
-        sb.from("items").update({link_label:lbl}).eq("link_group", el.dataset.grouplabel);
-      });
+      app.querySelectorAll("[data-grouplabel]").forEach(el=> el.onclick=()=>groupLabelModal(el.dataset.grouplabel));
       app.querySelectorAll("[data-vis]").forEach(b=> b.onclick=()=>toggleSectionVis(b.dataset.vis, b.dataset.on==="1"));
       wireDnd();
     }
@@ -808,6 +804,19 @@
   async function toggleSectionVis(id, on){
     await sb.from("sections").update({visible:!on}).eq("id", id);
     const s=state.sections.find(x=>x.id===id); if(s) s.visible=!on; drawList();
+  }
+  function groupLabelModal(key){
+    const cur=(state.items.find(x=>x.link_group===key && x.link_label)||{}).link_label || "";
+    modal(`<h3>Name this group</h3>
+      <p class="muted" style="font-size:.9rem">Shown above the linked items. Clear it to go back to “Linked”.</p>
+      <label>Group label</label><input id="gl" value="${esc(cur)}" placeholder="e.g. Negroni ingredients"/>
+      <button class="btn wide" id="go">Save</button>`, m=>{
+      const inp=m.querySelector("#gl"); inp.focus(); inp.select();
+      m.querySelector("#go").onclick=async()=>{ const v=inp.value.trim()||null;
+        state.items.forEach(it=>{ if(it.link_group===key) it.link_label=v; });
+        await sb.from("items").update({link_label:v}).eq("link_group", key);
+        closeModal(); drawList(); toast("Group renamed."); };
+    });
   }
   function sectionWarnModal(secId){
     const s=state.sections.find(x=>x.id===secId); if(!s) return;
