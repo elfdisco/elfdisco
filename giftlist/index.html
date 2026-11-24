@@ -4,6 +4,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Gift lists · elfdisco</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+<meta name="theme-color" content="#8d3350"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -360,23 +362,30 @@
   // ===================================================================
   async function renderDashboard(){
     const lists = await myLists(session.user.id);
-    const rows = lists.map(l=>`
+    const live = lists.filter(l=>!l.is_archived);
+    const arch = lists.filter(l=>l.is_archived);
+    const card = l=>`
       <div class="listcard ${l.is_archived?'arch':''}">
         <div class="b">
           <div class="lt">${esc(l.title)}</div>
-          <div class="muted" style="font-size:.84rem">/giftlist/#/${esc(profile.username)}/${esc(l.slug)} ${l.is_archived?'· archived':''}</div>
+          <div class="muted" style="font-size:.84rem">/giftlist/#/${esc(profile.username)}/${esc(l.slug)}</div>
         </div>
         <button class="btn sm" onclick="location.hash='#/${esc(profile.username)}/${esc(l.slug)}'">Open</button>
         <button class="btn ghost sm" data-dup="${l.id}">Duplicate</button>
         <button class="btn ghost sm" data-arch="${l.id}" data-on="${l.is_archived?1:0}">${l.is_archived?'Unarchive':'Archive'}</button>
-      </div>`).join("") || '<p class="muted center">No lists yet — make your first one.</p>';
+      </div>`;
+    const liveHTML = live.length ? live.map(card).join("") : '<p class="muted center">No live lists yet — make one below.</p>';
+    const archHTML = arch.length
+      ? `<div class="sec-h" style="margin-top:36px"><h2>Archived</h2><span class="ln"></span></div>`+arch.map(card).join("")
+      : "";
     app.innerHTML = `
       <div class="wrap">
         <div class="kicker">your lists</div>
         <h1 class="title">Hello, ${esc(profile.display_name)}</h1>
         <div class="rule"></div>
-        ${rows}
+        ${liveHTML}
         <button class="btn wide" id="new">+ New list</button>
+        ${archHTML}
       </div>`;
     $("#new").onclick = newListModal;
     app.querySelectorAll("[data-dup]").forEach(b=> b.onclick=()=>duplicateList(b.dataset.dup));
