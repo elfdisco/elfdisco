@@ -340,7 +340,7 @@
       <div class="listcard ${l.is_archived?'arch':''}">
         <div class="b">
           <div class="lt">${esc(l.title)}</div>
-          <div class="muted" style="font-size:.84rem">/giftlist/${esc(profile.username)}/${esc(l.slug)} ${l.is_archived?'· archived':''}</div>
+          <div class="muted" style="font-size:.84rem">/giftlist/#/${esc(profile.username)}/${esc(l.slug)} ${l.is_archived?'· archived':''}</div>
         </div>
         <button class="btn sm" onclick="location.hash='#/${esc(profile.username)}/${esc(l.slug)}'">Open</button>
         <button class="btn ghost sm" data-dup="${l.id}">Duplicate</button>
