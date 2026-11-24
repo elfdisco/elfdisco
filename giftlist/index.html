@@ -47,7 +47,9 @@
   .topbar .brand{font-family:"Fraunces";font-weight:600;color:var(--claret-deep);text-decoration:none;font-size:1.05rem}
   .topbar .sp{flex:1}
   .topbar .who{color:var(--soft);font-size:.86rem}
-  .iconbtn{background:none;border:1px solid var(--line);border-radius:9px;color:var(--soft);cursor:pointer;padding:6px 10px;font-size:.85rem;font-weight:600;font-family:inherit}
+  .iconbtn{background:none;border:1px solid var(--line);border-radius:9px;color:var(--soft);cursor:pointer;padding:6px 8px;font-size:.85rem;font-weight:600;font-family:inherit;display:inline-flex;align-items:center;justify-content:center}
+  .iconbtn svg,.grip svg{display:block}
+  .grouplabel svg{vertical-align:-2px}
   .iconbtn:hover{color:var(--ink)}
   .wrap{max-width:720px;margin:0 auto;padding:34px 22px 90px}
 
@@ -194,9 +196,22 @@
   const slugify = s => (s||"").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40) || "list";
   function toast(msg){ const t=document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2600); }
 
+  // ---------- inline SVG icons (emoji don't render reliably everywhere) ----------
+  const _svg=(inner,o)=>{o=o||{};return `<svg width="${o.w||15}" height="${o.w||15}" viewBox="0 0 24 24" fill="${o.fill||'none'}" stroke="${o.sw===0?'none':'currentColor'}" stroke-width="${o.sw==null?2:o.sw}" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;};
+  const ICON={
+    eye:_svg('<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>'),
+    eyeoff:_svg('<path d="M17.9 17.9A10 10 0 0 1 12 20C5 20 1 12 1 12a18.5 18.5 0 0 1 5-5.9M9.9 4.2A9 9 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.2 3.2M14.1 14.1a3 3 0 1 1-4.2-4.2"/><line x1="1" y1="1" x2="23" y2="23"/>'),
+    warn:_svg('<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12" y2="17.01"/>'),
+    trash:_svg('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>'),
+    pencil:_svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',{w:13}),
+    grip:_svg('<circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/>',{fill:'currentColor',sw:0,w:16}),
+    contrast:_svg('<circle cx="12" cy="12" r="9"/><path d="M12 3v18a9 9 0 0 0 0-18z" fill="currentColor" stroke="none"/>',{w:16}),
+  };
+
   let session=null, profile=null, state={};
 
   // ---------- theme toggle (auto by default) ----------
+  $("#themeBtn").innerHTML = ICON.contrast;
   $("#themeBtn").onclick = ()=>{
     const cur = document.documentElement.getAttribute("data-theme");
     const next = cur==="auto" ? "light" : cur==="light" ? "dark" : "auto";
@@ -522,12 +537,12 @@
     let bar="";
     if(isOwner){
       bar = `<div class="editbar">
-        <button class="btn sm" id="editToggle">${editing?"👁 View as guest":"✎ Edit mode"}</button>
+        <button class="btn sm" id="editToggle">${editing?"View as guest":"Edit mode"}</button>
         ${editing?`<button class="btn ghost sm" id="addSec">+ Section</button>
           <button class="btn ghost sm" id="editTiers">Price tiers</button>
           <button class="btn ghost sm" id="listSettings">Settings</button>`:""}
         <button class="btn ghost sm" id="share">Share</button>
-        <button class="btn ghost sm" id="reveal">${state.revealed?"Hide claims":"Reveal claims 👀"}</button>
+        <button class="btn ghost sm" id="reveal">${state.revealed?"Hide claims":"Reveal claims"}</button>
       </div>`;
     }
 
@@ -542,9 +557,9 @@
           <h2 ${editing?'contenteditable data-edit-sec="'+s.id+'"':''}>${esc(s.title)}</h2>
           ${!s.visible?'<span class="hidden-tag">on hold</span>':''}
           <span class="ln"></span>
-          ${editing?`<button class="iconbtn" data-vis="${s.id}" data-on="${s.visible?1:0}" title="Show/hide">${s.visible?'👁':'🚫'}</button>
-            <button class="iconbtn" data-secwarn="${s.id}" title="Section warning note" style="${s.warning?'color:#c8922e':''}">⚠</button>
-            <button class="iconbtn" data-delsec="${s.id}" title="Delete section">🗑</button>`:""}
+          ${editing?`<button class="iconbtn" data-vis="${s.id}" data-on="${s.visible?1:0}" title="${s.visible?'Visible to guests — click to hide this section':'Hidden from guests — click to show'}">${s.visible?ICON.eye:ICON.eyeoff}</button>
+            <button class="iconbtn" data-secwarn="${s.id}" title="Section warning note" style="${s.warning?'color:var(--gold)':''}">${ICON.warn}</button>
+            <button class="iconbtn" data-delsec="${s.id}" title="Delete section">${ICON.trash}</button>`:""}
         </div>
         <div class="dropzone" data-zone="${s.id}">${cards}</div>
         ${editing?`<button class="btn ghost sm" data-additem="${s.id}">+ Add item</button>`:""}
@@ -594,7 +609,7 @@
       const members=u.items.slice().sort((a,b)=>a.position-b.position);
       const label=(members.find(x=>x.link_label)||{}).link_label || 'Linked';
       return `<div class="group" data-group="${u.key}" ${editing?'draggable="true"':''}>
-        <div class="grouphead">${editing?'<span class="grip" title="Drag the whole group">⋮⋮</span>':''}<span class="grouplabel ${editing?'editable':''}" ${editing?`data-grouplabel="${u.key}" title="Rename group"`:''}>${esc(label)}${editing?' ✎':''}</span></div>
+        <div class="grouphead">${editing?'<span class="grip" title="Drag the whole group">'+ICON.grip+'</span>':''}<span class="grouplabel ${editing?'editable':''}" ${editing?`data-grouplabel="${u.key}" title="Rename group"`:''}>${esc(label)}${editing?' '+ICON.pencil:''}</span></div>
         <div class="groupzone" data-group="${u.key}">${members.map(m=>renderItem(m,0)).join("")}</div>
       </div>`;
     }).join("");
@@ -630,9 +645,9 @@
     }
     const kids = state.items.filter(c=>c.parent_id===i.id && !c.archived && (!c.hidden || (isOwner && editing))).sort((a,b)=>a.position-b.position);
     const kidHTML = kids.length ? `<div class="subitems">${kids.map(c=>renderItem(c,depth+1)).join("")}</div>` : "";
-    const editControls = editing ? `<div class="itemedit"><button class="mini" data-subitem="${i.id}">＋ sub-item</button><button class="mini" data-hide="${i.id}" data-on="${i.hidden?1:0}">${i.hidden?'Show to guests':'Hide from guests'}</button><button class="mini" data-arcitem="${i.id}">Archive</button></div>` : "";
+    const editControls = editing ? `<div class="itemedit"><button class="mini" data-subitem="${i.id}">+ sub-item</button><button class="mini" data-hide="${i.id}" data-on="${i.hidden?1:0}">${i.hidden?'Show to guests':'Hide from guests'}</button><button class="mini" data-arcitem="${i.id}">Archive</button></div>` : "";
     const cardHTML = `<div class="card ${taken?'taken':''} ${i.hidden?'ishidden':''} ${depth>0?'subitem':''}" data-item="${i.id}">
-      ${editing&&depth===0?'<span class="grip" title="Drag to reorder">⋮⋮</span>':''}
+      ${editing&&depth===0?'<span class="grip" title="Drag to reorder">'+ICON.grip+'</span>':''}
       <div class="price">${coinsHTML(i.coins||0)}</div>
       <div class="b"><div class="ti">${titleHTML}${i.hidden?' <span class="hiddenbadge">hidden</span>':''}</div>${i.note?`<div class="nt">${esc(i.note)}</div>`:""}${warnLine}${status}${editControls}</div>
       <div class="actions">${actions}</div>
@@ -836,7 +851,7 @@
   function sectionWarnModal(secId){
     const s=state.sections.find(x=>x.id===secId); if(!s) return;
     modal(`<h3>Section warning</h3>
-      <p class="muted" style="font-size:.9rem">Puts a ⚠ on every item in “${esc(s.title)}”, with this note on hover. Leave blank to remove.</p>
+      <p class="muted" style="font-size:.9rem">Puts a warning marker on every item in “${esc(s.title)}”, with this note on hover. Leave blank to remove.</p>
       <label>Note</label><input id="w" value="${esc(s.warning||"")}" placeholder="e.g. Hold off on these for now"/>
       <button class="btn wide" id="go">Save</button>`, m=>{
       m.querySelector("#go").onclick=async()=>{ const v=m.querySelector("#w").value.trim()||null;
@@ -884,7 +899,7 @@
       <hr style="border:none;border-top:1px solid var(--line);margin:16px 0"/>
       <label>Warning note on every item — whole list (optional)</label>
       <input id="warn" value="${esc(l.item_warning||"")}" placeholder="e.g. please check sizes with me first"/>
-      <p class="muted" style="font-size:.82rem">⚠ on every item across the list. For just one section, use the ⚠ on that section's header while editing.</p>
+      <p class="muted" style="font-size:.82rem">A warning marker on every item across the list. For just one section, use the warning button on that section's header while editing.</p>
       <button class="btn sm" id="savewarn">Save note</button>
       <hr style="border:none;border-top:1px solid var(--line);margin:16px 0"/>
       <button class="btn ghost wide" id="arch">${l.is_archived?"Unarchive this list":"Archive this list"}</button>
