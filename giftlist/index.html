@@ -240,7 +240,7 @@
       if(r.view==="setup")  return renderSetup();
       if(r.view==="home")   return session ? (profile?renderDashboard():renderSetup()) : renderLanding();
       if(r.view==="list")   return renderList(r.username, r.slug);
-      if(r.view==="user")   return renderLanding();
+      if(r.view==="user")   return renderUser(r.username);
     }catch(e){ console.error(e); app.innerHTML='<div class="panel center">Something went wrong.<br><span class="muted">'+esc(e.message||e)+'</span></div>'; }
   }
 
@@ -259,6 +259,30 @@
           <button class="btn wide" onclick="location.hash='#/signin'">Owner sign in / sign up</button>
         </div>
       </div>`;
+  }
+
+  // ---------- a person's live (non-archived) lists ----------
+  async function renderUserLists(owner, note){
+    const { data: lists } = await sb.from("lists").select("slug,title,subtitle")
+      .eq("owner_id", owner.id).eq("is_archived", false).order("created_at");
+    const rows = (lists||[]).map(l=>`
+      <div class="listcard">
+        <div class="b"><div class="lt">${esc(l.title)}</div>
+        ${l.subtitle?`<div class="muted" style="font-size:.84rem">${esc(l.subtitle)}</div>`:""}</div>
+        <button class="btn sm" onclick="location.hash='#/${esc(owner.username)}/${esc(l.slug)}'">Open</button>
+      </div>`).join("") || '<p class="muted center">No live lists right now.</p>';
+    app.innerHTML = `<div class="wrap">
+      <div class="kicker">a gift list</div>
+      <h1 class="title">${esc(owner.display_name)}</h1>
+      <div class="rule"></div>
+      ${note||""}
+      ${rows}
+    </div>`;
+  }
+  async function renderUser(username){
+    const { data: owner } = await sb.from("profiles").select("*").eq("username", username).maybeSingle();
+    if(!owner){ app.innerHTML='<div class="panel center"><h2>Not found</h2><p class="muted">No such person.</p></div>'; return; }
+    renderUserLists(owner);
   }
 
   function renderSignin(){
@@ -414,6 +438,12 @@
     state = { ...res, username, slug, editing:false, revealed:false, claims:[] };
     state.isOwner = !!(session && session.user.id===res.owner.id);
 
+    // archived list: guests get sent to the owner's live lists instead
+    if(res.list.is_archived && !state.isOwner){
+      return renderUserLists(res.owner,
+        `<div class="notice center">“${esc(res.list.title)}” has been archived by ${esc(res.owner.display_name)}. Here are their current lists:</div>`);
+    }
+
     // password gate for guests
     if(!state.isOwner){
       const { data: hasPw } = await sb.rpc("list_has_password",{p_list_id:res.list.id});
@@ -496,7 +526,7 @@
       <h1 class="title" ${editing?'contenteditable id="editTitle"':''}>${esc(list.title)}</h1>
       <div class="sub" ${editing?'contenteditable id="editSub"':''}>${esc(list.subtitle||(editing?"add a subtitle…":""))}</div>
       <div class="rule"></div>
-      ${list.is_archived?`<div class="notice center">This list has been archived by ${esc(owner.display_name)}.${list.archived_to?` See the live list: <a href="#/${esc(owner.username)}/${esc(list.archived_to)}">here</a>.`:""}</div>`:""}
+      ${list.is_archived?`<div class="notice center">This list is <b>archived</b>. Guests who open its link are sent to your other live lists. Unarchive it in Settings to make it live again.</div>`:""}
       ${bar}
       ${ownerNote}${guide}${hint}
       ${secHTML}
@@ -704,14 +734,11 @@
       <p class="muted" style="font-size:.82rem">A light gate for casual snooping — not bank-grade. Clear it to remove.</p>
       <button class="btn sm" id="savepw">Save password</button>
       <hr style="border:none;border-top:1px solid var(--line);margin:16px 0"/>
-      <label>Point an archived list at a live one (its link name)</label><input id="at" value="${esc(l.archived_to||"")}" placeholder="christmas-2026"/>
-      <button class="btn sm" id="saveat">Save redirect</button>
-      <hr style="border:none;border-top:1px solid var(--line);margin:16px 0"/>
       <button class="btn ghost wide" id="arch">${l.is_archived?"Unarchive this list":"Archive this list"}</button>
+      <p class="muted" style="font-size:.82rem">Archiving hides it from guests — anyone on its link is sent to your other live lists instead.</p>
       <div class="err" id="er"></div>`, m=>{
       m.querySelector("#savepw").onclick=async()=>{ const { error }=await sb.rpc("set_list_password",{p_list_id:l.id, p_password:m.querySelector("#pw").value});
         m.querySelector("#er").textContent=error?error.message:""; if(!error) toast("Password updated."); };
-      m.querySelector("#saveat").onclick=async()=>{ await sb.from("lists").update({archived_to:m.querySelector("#at").value.trim()||null}).eq("id",l.id); l.archived_to=m.querySelector("#at").value.trim()||null; toast("Saved."); };
       m.querySelector("#arch").onclick=async()=>{ await sb.from("lists").update({is_archived:!l.is_archived}).eq("id",l.id); l.is_archived=!l.is_archived; closeModal(); drawList(); };
     });
   }

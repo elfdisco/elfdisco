@@ -29,7 +29,6 @@ create table if not exists public.lists (
   theme_dark    text not null default 'ash',
   surprise_mode boolean not null default true,   -- owner can't see claims unless they reveal
   is_archived   boolean not null default false,
-  archived_to   text,                        -- slug of the replacement live list, if archived
   created_at    timestamptz not null default now(),
   unique (owner_id, slug)
 );
