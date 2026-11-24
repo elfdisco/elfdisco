@@ -368,9 +368,10 @@
       <div class="listcard ${l.is_archived?'arch':''}">
         <div class="b">
           <div class="lt">${esc(l.title)}</div>
-          <div class="muted" style="font-size:.84rem">/giftlist/#/${esc(profile.username)}/${esc(l.slug)}</div>
+          ${l.subtitle?`<div class="muted" style="font-size:.84rem">${esc(l.subtitle)}</div>`:""}
         </div>
         <button class="btn sm" onclick="location.hash='#/${esc(profile.username)}/${esc(l.slug)}'">Open</button>
+        <button class="btn ghost sm" data-copy="${esc(profile.username)}/${esc(l.slug)}">Copy link</button>
         <button class="btn ghost sm" data-dup="${l.id}">Duplicate</button>
         <button class="btn ghost sm" data-arch="${l.id}" data-on="${l.is_archived?1:0}">${l.is_archived?'Unarchive':'Archive'}</button>
       </div>`;
@@ -388,6 +389,10 @@
         ${archHTML}
       </div>`;
     $("#new").onclick = newListModal;
+    app.querySelectorAll("[data-copy]").forEach(b=> b.onclick=()=>{
+      const url=location.origin+location.pathname+"#/"+b.dataset.copy;
+      navigator.clipboard.writeText(url).then(()=>toast("Link copied")).catch(()=>toast(url));
+    });
     app.querySelectorAll("[data-dup]").forEach(b=> b.onclick=()=>duplicateList(b.dataset.dup));
     app.querySelectorAll("[data-arch]").forEach(b=> b.onclick=()=>toggleArchive(b.dataset.arch, b.dataset.on==="1"));
   }
@@ -750,6 +755,11 @@
   function listSettings(){
     const l=state.list;
     modal(`<h3>List settings</h3>
+      <label>Link name (the bit after your name in the address)</label>
+      <input id="slug" value="${esc(l.slug)}"/>
+      <p class="muted" style="font-size:.82rem">Lives at /giftlist/#/${esc(state.owner.username)}/<b>${esc(l.slug)}</b></p>
+      <button class="btn sm" id="saveslug">Save link name</button>
+      <hr style="border:none;border-top:1px solid var(--line);margin:16px 0"/>
       <label>Password (leave blank for none)</label><input id="pw" type="text" placeholder="set a password"/>
       <p class="muted" style="font-size:.82rem">A light gate for casual snooping — not bank-grade. Clear it to remove.</p>
       <button class="btn sm" id="savepw">Save password</button>
@@ -757,6 +767,15 @@
       <button class="btn ghost wide" id="arch">${l.is_archived?"Unarchive this list":"Archive this list"}</button>
       <p class="muted" style="font-size:.82rem">Archiving hides it from guests — anyone on its link is sent to your other live lists instead.</p>
       <div class="err" id="er"></div>`, m=>{
+      m.querySelector("#saveslug").onclick=async()=>{
+        const newSlug=slugify(m.querySelector("#slug").value);
+        if(!newSlug){ m.querySelector("#er").textContent="Give it a link name."; return; }
+        if(newSlug===l.slug){ toast("No change."); return; }
+        const { error } = await sb.from("lists").update({slug:newSlug}).eq("id", l.id);
+        if(error){ m.querySelector("#er").textContent = /duplicate/.test(error.message)?"You already have a list with that link name.":error.message; return; }
+        l.slug=newSlug; state.slug=newSlug; closeModal(); toast("Link name updated.");
+        location.hash="#/"+state.owner.username+"/"+newSlug;
+      };
       m.querySelector("#savepw").onclick=async()=>{ const { error }=await sb.rpc("set_list_password",{p_list_id:l.id, p_password:m.querySelector("#pw").value});
         m.querySelector("#er").textContent=error?error.message:""; if(!error) toast("Password updated."); };
       m.querySelector("#arch").onclick=async()=>{ await sb.from("lists").update({is_archived:!l.is_archived}).eq("id",l.id); l.is_archived=!l.is_archived; closeModal(); drawList(); };
