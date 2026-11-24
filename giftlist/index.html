@@ -253,6 +253,7 @@
   }
 
   function renderSignin(){
+    if(session){ location.hash="#/"; return; }
     app.innerHTML = `
       <div class="panel">
         <h2>Owner sign in</h2>
@@ -264,10 +265,11 @@
         <button class="btn ghost wide" id="su">Create an account instead</button>
       </div>`;
     $("#go").onclick = async()=>{
-      $("#er").textContent="";
+      $("#er").textContent="Signing in…";
       const email=$("#em").value.trim(), password=$("#pw").value;
       const { error } = await sb.auth.signInWithPassword({email,password});
-      if(error) $("#er").textContent=error.message;
+      if(error){ $("#er").textContent=error.message; }
+      else { location.hash="#/"; }
     };
     $("#su").onclick = ()=> renderSignup();
   }
@@ -755,7 +757,10 @@
       if(pend){ const { error }=await sb.from("profiles").insert({id:session.user.id, username:pend.username, display_name:pend.display});
         if(!error){ localStorage.removeItem("elfdisco.giftlist.pending"); await ensureProfile(); } }
     }
-    renderAuthBtn(); route();
+    renderAuthBtn();
+    const path = location.hash.replace(/^#\/?/,"").split("/")[0];
+    if(session && path==="signin"){ location.hash="#/"; return; }
+    route();
   });
 
   (async ()=>{
