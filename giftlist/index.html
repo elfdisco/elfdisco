@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Gift lists · elfdisco</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ---------- LIGHT (rose smoke) ---------- */
+  :root{
+    --ink:#2b2420; --soft:#796f66; --card:#fffdfb; --line:#e7ddd3;
+    --claret:#8d3350; --claret-deep:#6f2640; --gold:#c89a4e; --teal:#2f6f63;
+    --page:radial-gradient(90% 60% at 50% -10%,#f2e7ea 0%,rgba(242,231,234,0) 62%),linear-gradient(180deg,#ece7e8 0%,#e3dde0 100%);
+    --bar:rgba(255,255,255,.72); --coin-ring:rgba(255,255,255,.35);
+    --sh:0 3px 10px rgba(80,50,40,.07); --sh-h:0 12px 24px rgba(80,50,40,.13);
+    --taken:rgba(255,255,255,.5); --btn-ink:#fff; --chip-ink:#fff;
+    --head:var(--claret-deep); --field:#fff; --field-line:#d9cdc2;
+  }
+  /* ---------- DARK (ash) ---------- */
+  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+    --ink:#f0eef0; --soft:#9b9aa3; --card:#2d2e36; --line:#3c3d47;
+    --claret:#d06580; --claret-deep:#b84e6a; --gold:#e3bd74; --teal:#59a99a;
+    --page:radial-gradient(100% 62% at 80% -16%,#2e2f38 0%,rgba(46,47,56,0) 62%),linear-gradient(180deg,#26272e 0%,#1e1f25 100%);
+    --bar:rgba(30,31,37,.72); --coin-ring:rgba(255,255,255,.2);
+    --sh:0 3px 14px rgba(0,0,0,.45); --sh-h:0 16px 34px rgba(0,0,0,.6);
+    --taken:rgba(255,255,255,.05); --btn-ink:#fff4f6; --chip-ink:#06231d;
+    --head:var(--claret); --field:#24252c; --field-line:#44454f;
+  }}
+  html[data-theme="dark"]{
+    --ink:#f0eef0; --soft:#9b9aa3; --card:#2d2e36; --line:#3c3d47;
+    --claret:#d06580; --claret-deep:#b84e6a; --gold:#e3bd74; --teal:#59a99a;
+    --page:radial-gradient(100% 62% at 80% -16%,#2e2f38 0%,rgba(46,47,56,0) 62%),linear-gradient(180deg,#26272e 0%,#1e1f25 100%);
+    --bar:rgba(30,31,37,.72); --coin-ring:rgba(255,255,255,.2);
+    --sh:0 3px 14px rgba(0,0,0,.45); --sh-h:0 16px 34px rgba(0,0,0,.6);
+    --taken:rgba(255,255,255,.05); --btn-ink:#fff4f6; --chip-ink:#06231d;
+    --head:var(--claret); --field:#24252c; --field-line:#44454f;
+  }
+
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:"Inter",system-ui,sans-serif;color:var(--ink);font-size:16px;line-height:1.55;min-height:100vh;background:var(--page);background-attachment:fixed}
+  a{color:var(--claret)}
+  .topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--bar);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+  .topbar .brand{font-family:"Fraunces";font-weight:600;color:var(--claret-deep);text-decoration:none;font-size:1.05rem}
+  .topbar .sp{flex:1}
+  .topbar .who{color:var(--soft);font-size:.86rem}
+  .iconbtn{background:none;border:1px solid var(--line);border-radius:9px;color:var(--soft);cursor:pointer;padding:6px 10px;font-size:.85rem;font-weight:600;font-family:inherit}
+  .iconbtn:hover{color:var(--ink)}
+  .wrap{max-width:720px;margin:0 auto;padding:34px 22px 90px}
+
+  .kicker{text-align:center;letter-spacing:.3em;text-transform:uppercase;font-size:.72rem;color:var(--claret);font-weight:600}
+  h1.title{font-family:"Fraunces",serif;font-weight:600;text-align:center;font-size:clamp(2.4rem,7vw,3.6rem);margin:.1em 0 .04em;color:var(--head);letter-spacing:-.01em}
+  .sub{text-align:center;font-family:"Fraunces";font-style:italic;color:var(--soft);font-size:1.15rem;margin:0 0 18px}
+  .rule{display:flex;align-items:center;justify-content:center;gap:12px;margin:0 0 22px;color:var(--gold)}
+  .rule::before,.rule::after{content:"";height:2px;width:70px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+  .guide{display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:center;align-items:center;border:1px solid var(--line);border-radius:14px;padding:10px 20px;max-width:540px;margin:0 auto 16px;background:var(--card)}
+  .guide .gl{font-family:"Fraunces";font-style:italic;color:var(--claret)}
+  .guide .gi{display:inline-flex;align-items:center;gap:7px;color:var(--soft);font-size:.9rem;white-space:nowrap}
+  .coins{display:inline-flex} .coin{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f0d9a2,var(--gold) 72%,#9a7430);box-shadow:inset 0 0 0 1px var(--coin-ring)} .coin:not(:first-child){margin-left:-5px}
+  .hint{color:var(--soft);font-size:.92rem;max-width:520px;margin:0 auto 26px;border-left:3px solid var(--teal);padding-left:12px}
+  .notice{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:10px;padding:10px 14px;margin:0 auto 22px;max-width:560px;color:var(--soft);font-size:.9rem}
+
+  .sec{margin:0 0 26px}
+  .sec-h{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .sec-h h2{font-family:"Fraunces";font-weight:600;font-size:1.55rem;margin:0;color:var(--head)}
+  .sec-h .n{font-size:.8rem;color:var(--gold);font-weight:700}
+  .sec-h .ln{flex:1;height:1px;background:var(--line)}
+  .sec-h .hidden-tag{font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--soft);border:1px solid var(--line);border-radius:5px;padding:2px 6px}
+
+  .card{position:relative;display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:14px 16px 14px 19px;margin-bottom:10px;box-shadow:var(--sh);transition:transform .15s,box-shadow .15s}
+  .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--claret);border-radius:13px 0 0 13px}
+  .card.drag{opacity:.4} .card.over{outline:2px dashed var(--gold);outline-offset:2px}
+  .card .price{flex:0 0 auto;width:50px;padding-top:3px}
+  .card .b{flex:1 1 auto;min-width:0}
+  .card .ti{font-family:"Fraunces";font-size:1.22rem;font-weight:600;line-height:1.2;color:var(--ink)}
+  .card .ti a{text-decoration:none;background:linear-gradient(var(--claret),var(--claret)) 0 100%/0 2px no-repeat;transition:background-size .25s;padding-bottom:1px}
+  .card .ti a:hover{background-size:100% 2px}
+  .card .nt{color:var(--soft);font-size:.92rem;margin-top:3px}
+  .card .ex{font-size:.72rem;color:var(--claret);margin-left:3px}
+  .card.taken{opacity:.72}
+  .card.taken .ti{text-decoration:line-through;text-decoration-color:var(--soft)}
+  .grip{cursor:grab;color:var(--soft);font-size:1.1rem;align-self:center;padding:0 2px;user-select:none}
+  .actions{display:flex;flex-direction:column;gap:6px;align-self:center}
+  .get{font-family:inherit;font-weight:600;font-size:.88rem;background:var(--claret);color:var(--btn-ink);border:none;border-radius:9px;padding:9px 14px;cursor:pointer;white-space:nowrap}
+  .get:hover{background:var(--claret-deep)}
+  .get.ghost{background:none;color:var(--claret);border:1px solid var(--line)}
+  .chip{font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;background:var(--teal);color:var(--chip-ink);border-radius:6px;padding:3px 8px;white-space:nowrap}
+  .claimer{color:var(--soft);font-size:.86rem;margin-top:4px}
+
+  .btn{font-family:inherit;font-weight:600;font-size:.92rem;background:var(--claret);color:var(--btn-ink);border:none;border-radius:10px;padding:11px 18px;cursor:pointer}
+  .btn:hover{background:var(--claret-deep)}
+  .btn.ghost{background:none;color:var(--claret);border:1px solid var(--line)}
+  .btn.wide{display:block;width:100%;margin-top:10px}
+  .btn.sm{padding:7px 12px;font-size:.84rem;border-radius:9px}
+  .btn.danger{background:#a23; }
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .center{text-align:center}
+
+  label{display:block;font-size:.82rem;color:var(--soft);margin:12px 0 4px;font-weight:600}
+  input,textarea,select{width:100%;font-family:inherit;font-size:1rem;color:var(--ink);background:var(--field);border:1px solid var(--field-line);border-radius:9px;padding:10px 12px}
+  textarea{resize:vertical;min-height:62px}
+  .err{color:#c0392b;font-size:.86rem;margin-top:8px}
+  .muted{color:var(--soft)}
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;max-width:420px;margin:30px auto;box-shadow:var(--sh)}
+  .panel h2{font-family:"Fraunces";color:var(--head);margin:.1em 0 .3em}
+
+  .editbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:0 auto 22px;max-width:620px}
+  .listcard{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--sh)}
+  .listcard .b{flex:1;min-width:0}
+  .listcard .lt{font-family:"Fraunces";font-weight:600;font-size:1.15rem;color:var(--ink)}
+  .listcard.arch{opacity:.6}
+
+  /* modal */
+  .scrim{position:fixed;inset:0;background:rgba(20,15,18,.5);display:flex;align-items:center;justify-content:center;z-index:50;padding:18px}
+  .modal{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;max-width:440px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.3);max-height:90vh;overflow:auto}
+  .modal h3{font-family:"Fraunces";color:var(--head);margin:0 0 6px}
+  .modal .x{float:right;cursor:pointer;color:var(--soft);border:none;background:none;font-size:1.3rem}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--claret-deep);color:#fff;padding:11px 18px;border-radius:10px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:.92rem}
+  .spin{text-align:center;color:var(--soft);padding:60px 0}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="brand" href="#/">elfdisco gift lists</a>
+    <span class="sp"></span>
+    <span class="who" id="who"></span>
+    <button class="iconbtn" id="themeBtn" title="Light / dark">◐</button>
+    <button class="iconbtn" id="authBtn"></button>
+  </div>
+  <div id="app"><div class="spin">Loading…</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+  "use strict";
+  // ---------- config (publishable key is public-safe) ----------
+  const SUPABASE_URL = "https://lypbillwjaeghfpjrgnt.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_E8x3dkAa6ewCg78hkrYT0w_S8K7mvb1";
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // ---------- per-browser claim identity ----------
+  const ME_KEY = "elfdisco.giftlist.me";
+  let me = localStorage.getItem(ME_KEY);
+  if(!me){ me = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)); localStorage.setItem(ME_KEY, me); }
+  const nameMemo = ()=> localStorage.getItem("elfdisco.giftlist.name") || "";
+  const rememberName = n => localStorage.setItem("elfdisco.giftlist.name", n);
+
+  // ---------- small helpers ----------
+  const $ = sel => document.querySelector(sel);
+  const app = $("#app");
+  const esc = s => (s==null?"":String(s)).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const coinsHTML = n => n>0 ? '<span class="coins">'+Array.from({length:n}).map(()=>'<i class="coin"></i>').join('')+'</span>' : '<span style="color:var(--gold)">—</span>';
+  const slugify = s => (s||"").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40) || "list";
+  function toast(msg){ const t=document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2600); }
+
+  let session=null, profile=null, state={};
+
+  // ---------- theme toggle (auto by default) ----------
+  $("#themeBtn").onclick = ()=>{
+    const cur = document.documentElement.getAttribute("data-theme");
+    const next = cur==="auto" ? "light" : cur==="light" ? "dark" : "auto";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("elfdisco.giftlist.theme", next);
+  };
+  { const saved = localStorage.getItem("elfdisco.giftlist.theme"); if(saved) document.documentElement.setAttribute("data-theme", saved); }
+
+  // ===================================================================
+  //  DATA LAYER
+  // ===================================================================
+  async function resolveList(username, slug){
+    const { data: owner } = await sb.from("profiles").select("*").eq("username", username).maybeSingle();
+    if(!owner) return null;
+    const { data: list } = await sb.from("lists").select("*").eq("owner_id", owner.id).eq("slug", slug).maybeSingle();
+    if(!list) return { owner, list:null };
+    const [{data:sections},{data:items},{data:tiers}] = await Promise.all([
+      sb.from("sections").select("*").eq("list_id", list.id).order("position"),
+      sb.from("items").select("*").eq("list_id", list.id).order("position"),
+      sb.from("tiers").select("*").eq("list_id", list.id).order("position"),
+    ]);
+    return { owner, list, sections:sections||[], items:items||[], tiers:tiers||[] };
+  }
+  const loadClaims = async listId => (await sb.from("claims").select("*").eq("list_id", listId)).data || [];
+  const myLists = async uid => (await sb.from("lists").select("*").eq("owner_id", uid).order("created_at")).data || [];
+
+  async function seedList(listId){
+    await sb.from("tiers").insert([
+      {list_id:listId, coins:1, hint:"under £50",  position:0},
+      {list_id:listId, coins:2, hint:"£50–100",     position:1},
+      {list_id:listId, coins:3, hint:"£100+",       position:2},
+    ]);
+    await sb.from("sections").insert([
+      {list_id:listId, title:"This year's wishes", position:0, visible:true},
+      {list_id:listId, title:"Dream big",          position:1, visible:true},
+    ]);
+  }
+
+  // ===================================================================
+  //  AUTH
+  // ===================================================================
+  async function ensureProfile(){
+    if(!session){ profile=null; return; }
+    const { data } = await sb.from("profiles").select("*").eq("id", session.user.id).maybeSingle();
+    profile = data || null;
+  }
+  function renderAuthBtn(){
+    const b=$("#authBtn"), who=$("#who");
+    if(session){ b.textContent="Sign out"; b.onclick=async()=>{ await sb.auth.signOut(); location.hash="#/"; };
+      who.textContent = profile ? ("@"+profile.username) : session.user.email;
+    } else { b.textContent="Owner sign in"; b.onclick=()=>{ location.hash="#/signin"; }; who.textContent=""; }
+  }
+
+  // ===================================================================
+  //  ROUTER
+  // ===================================================================
+  function parseHash(){
+    let h = location.hash.replace(/^#\/?/,"");
+    const parts = h.split("/").filter(Boolean).map(decodeURIComponent);
+    if(parts.length===0) return {view:"home"};
+    if(parts[0]==="signin") return {view:"signin"};
+    if(parts[0]==="setup")  return {view:"setup"};
+    if(parts.length>=2) return {view:"list", username:parts[0], slug:parts[1]};
+    if(parts.length===1) return {view:"user", username:parts[0]};
+    return {view:"home"};
+  }
+  async function route(){
+    const r = parseHash();
+    app.innerHTML='<div class="spin">Loading…</div>';
+    try{
+      if(r.view==="signin") return renderSignin();
+      if(r.view==="setup")  return renderSetup();
+      if(r.view==="home")   return session ? (profile?renderDashboard():renderSetup()) : renderLanding();
+      if(r.view==="list")   return renderList(r.username, r.slug);
+      if(r.view==="user")   return renderLanding();
+    }catch(e){ console.error(e); app.innerHTML='<div class="panel center">Something went wrong.<br><span class="muted">'+esc(e.message||e)+'</span></div>'; }
+  }
+
+  // ===================================================================
+  //  VIEWS — public / auth
+  // ===================================================================
+  function renderLanding(){
+    app.innerHTML = `
+      <div class="wrap">
+        <div class="kicker">elfdisco</div>
+        <h1 class="title">Gift lists</h1>
+        <div class="sub">make a list, share a link, nobody doubles up</div>
+        <div class="rule"></div>
+        <div class="panel center">
+          <p class="muted">Signed-out visitors open a list from its share link. If this is your list, sign in to build and edit it.</p>
+          <button class="btn wide" onclick="location.hash='#/signin'">Owner sign in / sign up</button>
+        </div>
+      </div>`;
+  }
+
+  function renderSignin(){
+    app.innerHTML = `
+      <div class="panel">
+        <h2>Owner sign in</h2>
+        <p class="muted" style="font-size:.9rem">Only list owners need an account. Guests just open your link.</p>
+        <label>Email</label><input id="em" type="email" autocomplete="email"/>
+        <label>Password</label><input id="pw" type="password" autocomplete="current-password"/>
+        <div class="err" id="er"></div>
+        <button class="btn wide" id="go">Sign in</button>
+        <button class="btn ghost wide" id="su">Create an account instead</button>
+      </div>`;
+    $("#go").onclick = async()=>{
+      $("#er").textContent="";
+      const email=$("#em").value.trim(), password=$("#pw").value;
+      const { error } = await sb.auth.signInWithPassword({email,password});
+      if(error) $("#er").textContent=error.message;
+    };
+    $("#su").onclick = ()=> renderSignup();
+  }
+
+  function renderSignup(){
+    app.innerHTML = `
+      <div class="panel">
+        <h2>Create your account</h2>
+        <label>Your name (shown as the list owner)</label><input id="dn" autocomplete="name"/>
+        <label>Username (used in your link: /giftlist/<b>you</b>/…)</label><input id="un"/>
+        <label>Email</label><input id="em" type="email" autocomplete="email"/>
+        <label>Password (8+ characters)</label><input id="pw" type="password" autocomplete="new-password"/>
+        <div class="err" id="er"></div>
+        <button class="btn wide" id="go">Create account</button>
+        <button class="btn ghost wide" id="bk">Back to sign in</button>
+      </div>`;
+    $("#bk").onclick = renderSignin;
+    $("#go").onclick = async()=>{
+      $("#er").textContent="";
+      const display=$("#dn").value.trim(), username=slugify($("#un").value||$("#dn").value), email=$("#em").value.trim(), password=$("#pw").value;
+      if(!display||!username||!email||password.length<8){ $("#er").textContent="Fill everything in; password needs 8+ characters."; return; }
+      // remember desired profile until the session is ready
+      localStorage.setItem("elfdisco.giftlist.pending", JSON.stringify({username, display}));
+      const { data, error } = await sb.auth.signUp({email,password});
+      if(error){ $("#er").textContent=error.message; return; }
+      if(!data.session){ app.innerHTML=`<div class="panel center"><h2>Check your email</h2><p class="muted">Confirm your address, then come back and sign in.</p></div>`; }
+      // if a session is returned (email confirmation off), onAuthStateChange handles the rest
+    };
+  }
+
+  function renderSetup(){
+    const pend = JSON.parse(localStorage.getItem("elfdisco.giftlist.pending")||"null");
+    app.innerHTML = `
+      <div class="panel">
+        <h2>Pick your username</h2>
+        <p class="muted" style="font-size:.9rem">This goes in your list links: /giftlist/<b>username</b>/…</p>
+        <label>Your name</label><input id="dn" value="${esc(pend?pend.display:(session?session.user.email.split('@')[0]:''))}"/>
+        <label>Username</label><input id="un" value="${esc(pend?pend.username:'')}"/>
+        <div class="err" id="er"></div>
+        <button class="btn wide" id="go">Save</button>
+      </div>`;
+    $("#go").onclick = async()=>{
+      $("#er").textContent="";
+      const display_name=$("#dn").value.trim(), username=slugify($("#un").value||display_name);
+      if(!display_name||!username){ $("#er").textContent="Name and username required."; return; }
+      const { error } = await sb.from("profiles").insert({id:session.user.id, username, display_name});
+      if(error){ $("#er").textContent = error.message.includes("duplicate")?"That username is taken.":error.message; return; }
+      localStorage.removeItem("elfdisco.giftlist.pending");
+      await ensureProfile(); renderAuthBtn(); location.hash="#/";
+    };
+  }
+
+  // ===================================================================
+  //  VIEW — dashboard (your lists)
+  // ===================================================================
+  async function renderDashboard(){
+    const lists = await myLists(session.user.id);
+    const rows = lists.map(l=>`
+      <div class="listcard ${l.is_archived?'arch':''}">
+        <div class="b">
+          <div class="lt">${esc(l.title)}</div>
+          <div class="muted" style="font-size:.84rem">/giftlist/${esc(profile.username)}/${esc(l.slug)} ${l.is_archived?'· archived':''}</div>
+        </div>
+        <button class="btn sm" onclick="location.hash='#/${esc(profile.username)}/${esc(l.slug)}'">Open</button>
+        <button class="btn ghost sm" data-dup="${l.id}">Duplicate</button>
+        <button class="btn ghost sm" data-arch="${l.id}" data-on="${l.is_archived?1:0}">${l.is_archived?'Unarchive':'Archive'}</button>
+      </div>`).join("") || '<p class="muted center">No lists yet — make your first one.</p>';
+    app.innerHTML = `
+      <div class="wrap">
+        <div class="kicker">your lists</div>
+        <h1 class="title">Hello, ${esc(profile.display_name)}</h1>
+        <div class="rule"></div>
+        ${rows}
+        <button class="btn wide" id="new">+ New list</button>
+      </div>`;
+    $("#new").onclick = newListModal;
+    app.querySelectorAll("[data-dup]").forEach(b=> b.onclick=()=>duplicateList(b.dataset.dup));
+    app.querySelectorAll("[data-arch]").forEach(b=> b.onclick=()=>toggleArchive(b.dataset.arch, b.dataset.on==="1"));
+  }
+
+  function newListModal(){
+    modal(`
+      <h3>New gift list</h3>
+      <label>Title</label><input id="t" placeholder="e.g. Ed's Christmas list"/>
+      <label>Subtitle (optional)</label><input id="s" placeholder="for Christmas & birthdays"/>
+      <label>Link name</label><input id="g" placeholder="christmas"/>
+      <div class="err" id="er"></div>
+      <button class="btn wide" id="go">Create</button>
+    `, m=>{
+      const tI=m.querySelector("#t"), gI=m.querySelector("#g");
+      tI.oninput=()=>{ if(!gI.dataset.touched) gI.value=slugify(tI.value); };
+      gI.oninput=()=> gI.dataset.touched="1";
+      m.querySelector("#go").onclick = async()=>{
+        const title=tI.value.trim(), subtitle=m.querySelector("#s").value.trim(), slug=slugify(gI.value||tI.value);
+        if(!title){ m.querySelector("#er").textContent="Give it a title."; return; }
+        const { data, error } = await sb.from("lists").insert({owner_id:session.user.id, slug, title, subtitle}).select().maybeSingle();
+        if(error){ m.querySelector("#er").textContent = error.message.includes("duplicate")?"You already have a list with that link name.":error.message; return; }
+        await seedList(data.id); closeModal(); location.hash="#/"+profile.username+"/"+data.slug;
+      };
+    });
+  }
+
+  async function duplicateList(id){
+    const { data: src } = await sb.from("lists").select("*").eq("id", id).maybeSingle();
+    let base = src.slug.replace(/-\d{4}$/,""); const slug = base+"-"+new Date().getFullYear();
+    const { data: nl, error } = await sb.from("lists").insert({owner_id:session.user.id, slug, title:src.title, subtitle:src.subtitle}).select().maybeSingle();
+    if(error){ toast(error.message.includes("duplicate")?"Already duplicated this year.":error.message); return; }
+    const [{data:tiers},{data:sections}] = await Promise.all([
+      sb.from("tiers").select("*").eq("list_id",id).order("position"),
+      sb.from("sections").select("*").eq("list_id",id).order("position"),
+    ]);
+    if(tiers&&tiers.length) await sb.from("tiers").insert(tiers.map(t=>({list_id:nl.id,coins:t.coins,hint:t.hint,position:t.position})));
+    const { data: items } = await sb.from("items").select("*").eq("list_id",id).order("position");
+    for(const s of (sections||[])){
+      const { data: ns } = await sb.from("sections").insert({list_id:nl.id,title:s.title,sub:s.sub,visible:s.visible,position:s.position}).select().maybeSingle();
+      const own = (items||[]).filter(i=>i.section_id===s.id);
+      if(own.length) await sb.from("items").insert(own.map(i=>({list_id:nl.id,section_id:ns.id,title:i.title,url:i.url,note:i.note,coins:i.coins,position:i.position})));
+    }
+    toast("Duplicated — claims start fresh."); renderDashboard();
+  }
+  async function toggleArchive(id, on){
+    await sb.from("lists").update({is_archived:!on}).eq("id", id);
+    renderDashboard();
+  }
+
+  // ===================================================================
+  //  VIEW — a list (guest viewer + owner editor)
+  // ===================================================================
+  async function renderList(username, slug){
+    const res = await resolveList(username, slug);
+    if(!res || !res.owner){ app.innerHTML='<div class="panel center"><h2>Not found</h2><p class="muted">No such person.</p></div>'; return; }
+    if(!res.list){ app.innerHTML='<div class="panel center"><h2>Not found</h2><p class="muted">No such list.</p></div>'; return; }
+    state = { ...res, username, slug, editing:false, revealed:false, claims:[] };
+    state.isOwner = !!(session && session.user.id===res.owner.id);
+
+    // password gate for guests
+    if(!state.isOwner){
+      const { data: hasPw } = await sb.rpc("list_has_password",{p_list_id:res.list.id});
+      const okKey = "elfdisco.giftlist.pw."+res.list.id;
+      if(hasPw && sessionStorage.getItem(okKey)!=="1"){ return renderPwGate(res.list, okKey); }
+    }
+    // claims: guests (and non-owners) can read; owner gets none unless they reveal
+    state.claims = state.isOwner ? [] : await loadClaims(res.list.id);
+    drawList();
+  }
+
+  function renderPwGate(list, okKey){
+    app.innerHTML = `<div class="panel"><h2>${esc(list.title)}</h2>
+      <p class="muted">This list is password protected.</p>
+      <label>Password</label><input id="pw" type="password"/>
+      <div class="err" id="er"></div>
+      <button class="btn wide" id="go">View list</button></div>`;
+    $("#go").onclick = async()=>{
+      const { data: ok } = await sb.rpc("verify_list_password",{p_list_id:list.id, p_attempt:$("#pw").value});
+      if(ok){ sessionStorage.setItem(okKey,"1"); renderList(state.username, state.slug); }
+      else $("#er").textContent="Wrong password.";
+    };
+  }
+
+  function claimFor(itemId){ return state.claims.find(c=>c.item_id===itemId); }
+
+  function drawList(){
+    const {list, owner, sections, items, tiers, editing, isOwner} = state;
+    const guide = tiers.length ? `<div class="guide"><span class="gl">price guide</span>${tiers.map(t=>`<span class="gi">${coinsHTML(t.coins)} ${esc(t.hint)}</span>`).join("")}</div>` : "";
+
+    // owner edit toolbar
+    let bar="";
+    if(isOwner){
+      bar = `<div class="editbar">
+        <button class="btn sm" id="editToggle">${editing?"✓ Done editing":"✎ Edit list"}</button>
+        ${editing?`<button class="btn ghost sm" id="addSec">+ Section</button>
+          <button class="btn ghost sm" id="editTiers">Price tiers</button>
+          <button class="btn ghost sm" id="listSettings">Settings</button>`:""}
+        <button class="btn ghost sm" id="share">Share</button>
+        <button class="btn ghost sm" id="reveal">${state.revealed?"Hide claims":"Reveal claims 👀"}</button>
+      </div>`;
+    }
+
+    // which claims to show (owner sees none unless revealed)
+    const showClaims = (!isOwner) || state.revealed;
+
+    // build section blocks
+    const visibleSections = sections.filter(s=> s.visible || isOwner);
+    let secHTML = visibleSections.map((s,idx)=>{
+      const own = items.filter(i=>i.section_id===s.id);
+      const available = own.filter(i=> !(showClaims && claimFor(i.id)));
+      const cards = available.map(i=> itemCard(i, s)).join("") || (editing?"":'<p class="muted" style="margin:4px 0 14px">—</p>');
+      return `<div class="sec" data-sec="${s.id}">
+        <div class="sec-h"><span class="n">${String(idx+1).padStart(2,"0")}</span>
+          <h2 ${editing?'contenteditable data-edit-sec="'+s.id+'"':''}>${esc(s.title)}</h2>
+          ${!s.visible?'<span class="hidden-tag">on hold</span>':''}
+          <span class="ln"></span>
+          ${editing?`<button class="iconbtn" data-vis="${s.id}" data-on="${s.visible?1:0}" title="Show/hide">${s.visible?'👁':'🚫'}</button>
+            <button class="iconbtn" data-delsec="${s.id}" title="Delete section">🗑</button>`:""}
+        </div>
+        <div class="dropzone" data-zone="${s.id}">${cards}</div>
+        ${editing?`<button class="btn ghost sm" data-additem="${s.id}">+ Add item</button>`:""}
+      </div>`;
+    }).join("");
+
+    // taken compartment
+    let takenHTML="";
+    if(showClaims){
+      const taken = items.filter(i=> claimFor(i.id));
+      if(taken.length){
+        takenHTML = `<div class="sec"><div class="sec-h"><h2>Spoken for</h2><span class="ln"></span></div>` +
+          taken.map(i=>{ const c=claimFor(i.id); const mine=c.claimer_token===me;
+            return `<div class="card taken"><div class="price">${coinsHTML(i.coins||0)}</div>
+              <div class="b"><div class="ti">${esc(i.title)}</div>
+              <div class="claimer"><span class="chip">${c.kind==='bought'?'bought':'claimed'}</span> by ${esc(c.claimer_name)}${mine?' (you)':''}</div></div>
+              ${mine?`<div class="actions"><button class="get ghost" data-release="${i.id}">Release</button></div>`:""}
+            </div>`;
+          }).join("") + `</div>`;
+      }
+    }
+
+    const ownerNote = isOwner ? `<div class="notice">You're viewing <b>your own</b> list. Claims are hidden so your surprise is safe — use <b>Reveal claims</b> only if you really want to peek.</div>` : "";
+    const hint = isOwner ? "" : `<div class="hint">Pick something and mark it so nobody doubles up — ${esc(owner.display_name)} can't see what's been taken, so the surprise stays safe.</div>`;
+
+    app.innerHTML = `<div class="wrap">
+      <div class="kicker">${esc(owner.display_name)}${list.is_archived?" · archived":"'s list"}</div>
+      <h1 class="title" ${editing?'contenteditable id="editTitle"':''}>${esc(list.title)}</h1>
+      <div class="sub" ${editing?'contenteditable id="editSub"':''}>${esc(list.subtitle||(editing?"add a subtitle…":""))}</div>
+      <div class="rule"></div>
+      ${list.is_archived?`<div class="notice center">This list has been archived by ${esc(owner.display_name)}.${list.archived_to?` See the live list: <a href="#/${esc(owner.username)}/${esc(list.archived_to)}">here</a>.`:""}</div>`:""}
+      ${bar}
+      ${ownerNote}${guide}${hint}
+      ${secHTML}
+      ${takenHTML}
+    </div>`;
+
+    wireList();
+  }
+
+  function itemCard(i, s){
+    const editing = state.editing;
+    const ex = i.url?'<span class="ex">↗</span>':'';
+    const titleHTML = i.url && !editing ? `<a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}${ex}</a>` : esc(i.title)+(i.url?ex:"");
+    return `<div class="card" data-item="${i.id}" ${editing?'draggable="true"':''}>
+      ${editing?'<span class="grip" title="Drag to reorder / move">⋮⋮</span>':''}
+      <div class="price">${coinsHTML(i.coins||0)}</div>
+      <div class="b"><div class="ti">${titleHTML}</div>${i.note?`<div class="nt">${esc(i.note)}</div>`:""}</div>
+      <div class="actions">
+        ${editing
+          ? `<button class="get ghost" data-edititem="${i.id}">Edit</button>`
+          : `<button class="get" data-claim="${i.id}">I'll get this</button>`}
+      </div>
+    </div>`;
+  }
+
+  // ---------- wiring for the list view ----------
+  function wireList(){
+    const {list, isOwner, editing} = state;
+    const byId = s=>app.querySelector(s);
+    if(byId("#editToggle")) byId("#editToggle").onclick=()=>{ state.editing=!state.editing; saveTitleIfNeeded(); drawList(); };
+    if(byId("#share")) byId("#share").onclick=shareList;
+    if(byId("#reveal")) byId("#reveal").onclick=doReveal;
+    if(byId("#addSec")) byId("#addSec").onclick=addSection;
+    if(byId("#editTiers")) byId("#editTiers").onclick=editTiers;
+    if(byId("#listSettings")) byId("#listSettings").onclick=listSettings;
+
+    // claims
+    app.querySelectorAll("[data-claim]").forEach(b=> b.onclick=()=>claimModal(b.dataset.claim));
+    app.querySelectorAll("[data-release]").forEach(b=> b.onclick=()=>releaseItem(b.dataset.release));
+
+    if(editing){
+      // title/subtitle save on blur
+      ["editTitle","editSub"].forEach(id=>{ const el=byId("#"+id); if(el) el.onblur=saveTitleIfNeeded; });
+      app.querySelectorAll("[data-edit-sec]").forEach(h=> h.onblur=()=>{ const t=h.textContent.trim(); if(t) sb.from("sections").update({title:t}).eq("id",h.dataset.editSec).then(()=>{}); });
+      app.querySelectorAll("[data-additem]").forEach(b=> b.onclick=()=>itemModal(null, b.dataset.additem));
+      app.querySelectorAll("[data-edititem]").forEach(b=> b.onclick=()=>itemModal(b.dataset.edititem));
+      app.querySelectorAll("[data-delsec]").forEach(b=> b.onclick=()=>delSection(b.dataset.delsec));
+      app.querySelectorAll("[data-vis]").forEach(b=> b.onclick=()=>toggleSectionVis(b.dataset.vis, b.dataset.on==="1"));
+      wireDnd();
+    }
+  }
+
+  async function saveTitleIfNeeded(){
+    const t=app.querySelector("#editTitle"), s=app.querySelector("#editSub");
+    if(!t&&!s) return;
+    const title=t?t.textContent.trim():state.list.title;
+    let sub=s?s.textContent.trim():state.list.subtitle; if(sub==="add a subtitle…") sub="";
+    if(title!==state.list.title || sub!==(state.list.subtitle||"")){
+      await sb.from("lists").update({title, subtitle:sub}).eq("id", state.list.id);
+      state.list.title=title; state.list.subtitle=sub;
+    }
+  }
+
+  // ---------- drag & drop (desktop) ----------
+  function wireDnd(){
+    let dragId=null;
+    app.querySelectorAll('.card[draggable="true"]').forEach(card=>{
+      card.addEventListener("dragstart",e=>{ dragId=card.dataset.item; card.classList.add("drag"); e.dataTransfer.effectAllowed="move"; });
+      card.addEventListener("dragend",()=>{ dragId=null; card.classList.remove("drag"); app.querySelectorAll(".over").forEach(x=>x.classList.remove("over")); });
+      card.addEventListener("dragover",e=>{ e.preventDefault(); card.classList.add("over"); });
+      card.addEventListener("dragleave",()=> card.classList.remove("over"));
+      card.addEventListener("drop",e=>{ e.preventDefault(); card.classList.remove("over"); if(dragId&&dragId!==card.dataset.item) moveItem(dragId, card.dataset.item); });
+    });
+    app.querySelectorAll(".dropzone").forEach(z=>{
+      z.addEventListener("dragover",e=>e.preventDefault());
+      z.addEventListener("drop",e=>{ e.preventDefault(); if(dragId && !e.target.closest(".card")) moveItemToSection(dragId, z.dataset.zone); });
+    });
+  }
+  async function moveItem(dragId, targetId){
+    const items=state.items; const a=items.find(i=>i.id===dragId), b=items.find(i=>i.id===targetId);
+    if(!a||!b) return;
+    a.section_id=b.section_id;
+    const inSec=items.filter(i=>i.section_id===b.section_id && i.id!==dragId);
+    const bi=inSec.indexOf(b); inSec.splice(bi,0,a);
+    await persistOrder(b.section_id, inSec);
+    reloadItems();
+  }
+  async function moveItemToSection(dragId, secId){
+    const a=state.items.find(i=>i.id===dragId); if(!a) return; a.section_id=secId;
+    const inSec=state.items.filter(i=>i.section_id===secId);
+    await persistOrder(secId, inSec); reloadItems();
+  }
+  async function persistOrder(secId, ordered){
+    for(let k=0;k<ordered.length;k++){ await sb.from("items").update({section_id:secId, position:k}).eq("id", ordered[k].id); }
+  }
+  async function reloadItems(){
+    const { data } = await sb.from("items").select("*").eq("list_id", state.list.id).order("position");
+    state.items=data||[]; drawList();
+  }
+
+  // ---------- item add / edit modal ----------
+  function itemModal(itemId, sectionId){
+    const it = itemId ? state.items.find(i=>i.id===itemId) : null;
+    const secOpts = state.sections.map(s=>`<option value="${s.id}" ${((it&&it.section_id===s.id)||(!it&&s.id===sectionId))?"selected":""}>${esc(s.title)}</option>`).join("");
+    const tierOpts = `<option value="">— / returnable</option>`+state.tiers.map(t=>`<option value="${t.coins}" ${it&&it.coins===t.coins?"selected":""}>${"●".repeat(t.coins)} ${esc(t.hint)}</option>`).join("");
+    modal(`
+      <h3>${it?"Edit item":"Add item"}</h3>
+      <label>What is it?</label><input id="t" value="${esc(it?it.title:"")}"/>
+      <label>Link (optional)</label><input id="u" value="${esc(it?it.url:"")}" placeholder="https://…"/>
+      <label>Note (optional — size, colour, why…)</label><textarea id="n">${esc(it?it.note:"")}</textarea>
+      <label>Price</label><select id="c">${tierOpts}</select>
+      <label>Section</label><select id="s">${secOpts}</select>
+      <div class="err" id="er"></div>
+      <div class="row"><button class="btn" id="go">${it?"Save":"Add"}</button>
+      ${it?'<button class="btn ghost" id="del">Delete</button>':''}</div>
+    `, m=>{
+      m.querySelector("#go").onclick=async()=>{
+        const title=m.querySelector("#t").value.trim(); if(!title){ m.querySelector("#er").textContent="Needs a name."; return; }
+        const payload={ title, url:m.querySelector("#u").value.trim()||null, note:m.querySelector("#n").value.trim()||null,
+          coins:m.querySelector("#c").value?parseInt(m.querySelector("#c").value):null, section_id:m.querySelector("#s").value };
+        if(it){ await sb.from("items").update(payload).eq("id", it.id); }
+        else { const pos=state.items.filter(i=>i.section_id===payload.section_id).length;
+               await sb.from("items").insert({...payload, list_id:state.list.id, position:pos}); }
+        closeModal(); reloadItems();
+      };
+      if(it) m.querySelector("#del").onclick=async()=>{ await sb.from("items").delete().eq("id", it.id); closeModal(); reloadItems(); };
+    });
+  }
+
+  // ---------- sections ----------
+  async function addSection(){
+    const pos=state.sections.length;
+    const { data } = await sb.from("sections").insert({list_id:state.list.id, title:"New section", position:pos, visible:true}).select().maybeSingle();
+    state.sections.push(data); drawList();
+  }
+  async function delSection(id){
+    const n=state.items.filter(i=>i.section_id===id).length;
+    if(!confirm(n?`Delete this section and its ${n} item(s)?`:"Delete this empty section?")) return;
+    await sb.from("sections").delete().eq("id", id);
+    state.sections=state.sections.filter(s=>s.id!==id); state.items=state.items.filter(i=>i.section_id!==id); drawList();
+  }
+  async function toggleSectionVis(id, on){
+    await sb.from("sections").update({visible:!on}).eq("id", id);
+    const s=state.sections.find(x=>x.id===id); if(s) s.visible=!on; drawList();
+  }
+
+  // ---------- tiers ----------
+  function editTiers(){
+    const rows = state.tiers.map(t=>`<div class="row" data-tier="${t.id}" style="margin-bottom:8px">
+      <input style="width:70px" type="number" min="1" max="5" value="${t.coins}" data-f="coins"/>
+      <input style="flex:1" value="${esc(t.hint)}" data-f="hint"/>
+      <button class="btn ghost sm" data-deltier="${t.id}">✕</button></div>`).join("");
+    modal(`<h3>Price tiers</h3><p class="muted" style="font-size:.88rem">Coins = how generous. Shown as the guide at the top.</p>
+      <div id="rows">${rows}</div>
+      <button class="btn ghost sm" id="addtier">+ Add tier</button>
+      <button class="btn wide" id="go">Save tiers</button>`, m=>{
+      m.querySelector("#addtier").onclick=()=>{ const d=document.createElement("div"); d.className="row"; d.style.marginBottom="8px";
+        d.innerHTML=`<input style="width:70px" type="number" min="1" max="5" value="${(m.querySelectorAll('[data-tier],.row').length)}" data-f="coins"/><input style="flex:1" placeholder="e.g. £100+" data-f="hint"/><button class="btn ghost sm" data-delnew>✕</button>`;
+        m.querySelector("#rows").appendChild(d); d.querySelector("[data-delnew]").onclick=()=>d.remove(); };
+      m.querySelectorAll("[data-deltier]").forEach(b=> b.onclick=async()=>{ await sb.from("tiers").delete().eq("id",b.dataset.deltier); b.closest(".row").remove(); });
+      m.querySelector("#go").onclick=async()=>{
+        await sb.from("tiers").delete().eq("list_id", state.list.id);
+        const rows=[...m.querySelectorAll("#rows .row")]; const payload=rows.map((r,i)=>({ list_id:state.list.id,
+          coins:parseInt(r.querySelector('[data-f=coins]').value)||1, hint:r.querySelector('[data-f=hint]').value.trim()||"—", position:i }));
+        if(payload.length) await sb.from("tiers").insert(payload);
+        const { data } = await sb.from("tiers").select("*").eq("list_id",state.list.id).order("position"); state.tiers=data||[];
+        closeModal(); drawList();
+      };
+    });
+  }
+
+  // ---------- list settings (password / archive) ----------
+  function listSettings(){
+    const l=state.list;
+    modal(`<h3>List settings</h3>
+      <label>Password (leave blank for none)</label><input id="pw" type="text" placeholder="set a password"/>
+      <p class="muted" style="font-size:.82rem">A light gate for casual snooping — not bank-grade. Clear it to remove.</p>
+      <button class="btn sm" id="savepw">Save password</button>
+      <hr style="border:none;border-top:1px solid var(--line);margin:16px 0"/>
+      <label>Point an archived list at a live one (its link name)</label><input id="at" value="${esc(l.archived_to||"")}" placeholder="christmas-2026"/>
+      <button class="btn sm" id="saveat">Save redirect</button>
+      <hr style="border:none;border-top:1px solid var(--line);margin:16px 0"/>
+      <button class="btn ghost wide" id="arch">${l.is_archived?"Unarchive this list":"Archive this list"}</button>
+      <div class="err" id="er"></div>`, m=>{
+      m.querySelector("#savepw").onclick=async()=>{ const { error }=await sb.rpc("set_list_password",{p_list_id:l.id, p_password:m.querySelector("#pw").value});
+        m.querySelector("#er").textContent=error?error.message:""; if(!error) toast("Password updated."); };
+      m.querySelector("#saveat").onclick=async()=>{ await sb.from("lists").update({archived_to:m.querySelector("#at").value.trim()||null}).eq("id",l.id); l.archived_to=m.querySelector("#at").value.trim()||null; toast("Saved."); };
+      m.querySelector("#arch").onclick=async()=>{ await sb.from("lists").update({is_archived:!l.is_archived}).eq("id",l.id); l.is_archived=!l.is_archived; closeModal(); drawList(); };
+    });
+  }
+
+  // ---------- share ----------
+  async function shareList(){
+    const url = location.origin + location.pathname + "#/" + state.owner.username + "/" + state.list.slug;
+    const { data: hasPw } = await sb.rpc("list_has_password",{p_list_id:state.list.id});
+    let text = `${state.owner.display_name} invited you to their gift list: ${url}`;
+    if(hasPw) text += `\n(It's password protected — ask ${state.owner.display_name} for the password.)`;
+    try{ await navigator.clipboard.writeText(text); toast("Invite copied to clipboard."); }
+    catch(e){ modal(`<h3>Share this link</h3><textarea style="min-height:100px">${esc(text)}</textarea>`); }
+  }
+
+  // ---------- reveal ----------
+  async function doReveal(){
+    if(!state.revealed){
+      if(!confirm("This spoils your surprises — you'll see exactly what's been claimed and bought. Are you sure?")) return;
+      const { data } = await sb.rpc("reveal_claims",{p_list_id:state.list.id});
+      state.claims=data||[]; state.revealed=true;
+    } else { state.claims=[]; state.revealed=false; }
+    drawList();
+  }
+
+  // ---------- claim / release ----------
+  function claimModal(itemId){
+    const it=state.items.find(i=>i.id===itemId);
+    modal(`<h3>Mark this gift</h3>
+      <p class="muted">${esc(it.title)}</p>
+      <label>Your name (so others know it's covered)</label><input id="nm" value="${esc(nameMemo())}"/>
+      <div class="err" id="er"></div>
+      <div class="row"><button class="btn" id="will">I'll buy this</button>
+      <button class="btn ghost" id="bought">Already bought it</button></div>`, m=>{
+      const go=async kind=>{ const name=m.querySelector("#nm").value.trim(); if(!name){ m.querySelector("#er").textContent="Pop your name in."; return; }
+        rememberName(name);
+        const { data: ok, error } = await sb.rpc("claim_item",{p_item_id:itemId, p_token:me, p_name:name, p_kind:kind});
+        if(error){ m.querySelector("#er").textContent=error.message; return; }
+        closeModal();
+        if(ok===false){ toast("Someone just claimed that one."); }
+        state.claims = await loadClaims(state.list.id); drawList();
+      };
+      m.querySelector("#will").onclick=()=>go("claimed");
+      m.querySelector("#bought").onclick=()=>go("bought");
+    });
+  }
+  async function releaseItem(itemId){
+    const { data: ok } = await sb.rpc("release_claim",{p_item_id:itemId, p_token:me});
+    if(ok===false){ toast("Only the person who claimed it can release it."); }
+    state.claims = await loadClaims(state.list.id); drawList();
+  }
+
+  // ---------- modal plumbing ----------
+  function modal(html, after){
+    closeModal();
+    const scrim=document.createElement("div"); scrim.className="scrim"; scrim.id="scrim";
+    scrim.innerHTML=`<div class="modal"><button class="x" id="mx">×</button>${html}</div>`;
+    document.body.appendChild(scrim);
+    scrim.addEventListener("mousedown",e=>{ if(e.target===scrim) closeModal(); });
+    scrim.querySelector("#mx").onclick=closeModal;
+    if(after) after(scrim.querySelector(".modal"));
+  }
+  function closeModal(){ const s=$("#scrim"); if(s) s.remove(); }
+  window.addEventListener("keydown",e=>{ if(e.key==="Escape") closeModal(); });
+
+  // ===================================================================
+  //  BOOT
+  // ===================================================================
+  sb.auth.onAuthStateChange(async (_evt, s)=>{
+    session=s; await ensureProfile();
+    // finish signup profile creation if a session just arrived
+    if(session && !profile){
+      const pend=JSON.parse(localStorage.getItem("elfdisco.giftlist.pending")||"null");
+      if(pend){ const { error }=await sb.from("profiles").insert({id:session.user.id, username:pend.username, display_name:pend.display});
+        if(!error){ localStorage.removeItem("elfdisco.giftlist.pending"); await ensureProfile(); } }
+    }
+    renderAuthBtn(); route();
+  });
+
+  (async ()=>{
+    const { data } = await sb.auth.getSession();
+    session=data.session; await ensureProfile(); renderAuthBtn();
+    window.addEventListener("hashchange", route);
+    route();
+  })();
+})();
+</script>
+</body>
+</html>
