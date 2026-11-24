@@ -73,6 +73,11 @@
   .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--claret);border-radius:13px 0 0 13px}
   .itemwrap.dragging{opacity:.4}
   .dropzone{min-height:10px}
+  .group{position:relative;border:1px solid rgba(200,154,78,.45);border-radius:14px;padding:10px 10px 2px;margin-bottom:11px;background:rgba(200,154,78,.07)}
+  .group.dragging{opacity:.4}
+  .grouphead{display:flex;align-items:center;gap:8px;padding:0 4px 8px}
+  .grouplabel{font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--gold)}
+  .groupzone{min-height:6px}
   .card .price{flex:0 0 auto;width:50px;padding-top:3px}
   .card .b{flex:1 1 auto;min-width:0}
   .card .ti{font-family:"Fraunces";font-size:1.22rem;font-weight:600;line-height:1.2;color:var(--ink)}
@@ -83,7 +88,6 @@
   .card .ex{font-size:.8rem;color:var(--claret);margin-left:4px}
   .itemwarn{display:inline-flex;align-items:center;gap:6px;margin-top:8px;font-size:.82rem;line-height:1.35;color:var(--gold);background:rgba(200,154,78,.15);border:1px solid rgba(200,154,78,.42);border-radius:8px;padding:4px 10px}
   .itemwarn svg{flex:0 0 auto}
-  .related{display:inline-flex;align-items:center;gap:5px;margin-top:7px;font-size:.8rem;color:var(--soft)}
   .card.taken{opacity:.72}
   .card.taken .ti{text-decoration:line-through;text-decoration-color:var(--soft)}
   .grip{cursor:grab;color:var(--soft);font-size:1.1rem;align-self:center;padding:0 2px;user-select:none}
@@ -514,7 +518,7 @@
     let secHTML = visibleSections.map((s,idx)=>{
       const top = items.filter(i=> i.section_id===s.id && !i.parent_id && !i.archived && (!i.hidden || (isOwner && editing)))
                        .sort((a,b)=>a.position-b.position);
-      const cards = top.map(i=> renderItem(i,0)).join("") || (editing?"":'<p class="muted" style="margin:4px 0 14px">—</p>');
+      const cards = buildUnits(top, editing) || (editing?"":'<p class="muted" style="margin:4px 0 14px">—</p>');
       return `<div class="sec" data-sec="${s.id}">
         <div class="sec-h"><span class="n">${String(idx+1).padStart(2,"0")}</span>
           <h2 ${editing?'contenteditable data-edit-sec="'+s.id+'"':''}>${esc(s.title)}</h2>
@@ -559,6 +563,25 @@
     wireList();
   }
 
+  function buildUnits(top, editing){
+    const seen={}; const units=[];
+    for(const it of top){
+      if(it.link_group){
+        if(!seen[it.link_group]){ const g={type:'group',key:it.link_group,items:[],pos:Infinity}; seen[it.link_group]=g; units.push(g); }
+        const g=seen[it.link_group]; g.items.push(it); g.pos=Math.min(g.pos,it.position);
+      } else units.push({type:'item',key:it.id,pos:it.position,items:[it]});
+    }
+    units.sort((a,b)=>a.pos-b.pos);
+    return units.map(u=>{
+      if(u.type==='item' || u.items.length<2) return u.items.map(m=>renderItem(m,0)).join("");
+      const members=u.items.slice().sort((a,b)=>a.position-b.position);
+      return `<div class="group" data-group="${u.key}" ${editing?'draggable="true"':''}>
+        <div class="grouphead">${editing?'<span class="grip" title="Drag the whole group">⋮⋮</span>':''}<span class="grouplabel">linked</span></div>
+        <div class="groupzone" data-group="${u.key}">${members.map(m=>renderItem(m,0)).join("")}</div>
+      </div>`;
+    }).join("");
+  }
+
   function renderItem(i, depth){
     const editing=state.editing, isOwner=state.isOwner;
     const showClaims = (!isOwner) || state.revealed;
@@ -569,8 +592,6 @@
     const sec = state.sections.find(s=>s.id===i.section_id);
     const warnMsgs = [sec&&sec.warning, state.list.item_warning].filter(Boolean);
     const warnLine = warnMsgs.length ? `<div class="itemwarn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12" y2="17.01"/></svg><span>${esc(warnMsgs.join(' · '))}</span></div>` : "";
-    const relItems = i.link_group ? state.items.filter(x=>x.link_group && x.link_group===i.link_group && x.id!==i.id) : [];
-    const relLine = relItems.length ? `<div class="related">↔ related to ${relItems.map(r=>esc(r.title)).join(', ')}</div>` : "";
     let status="";
     let actions="";
     if(editing){ actions=`<button class="get ghost" data-edititem="${i.id}">Edit</button>`; }
@@ -595,7 +616,7 @@
     const cardHTML = `<div class="card ${taken?'taken':''} ${i.hidden?'ishidden':''} ${depth>0?'subitem':''}" data-item="${i.id}">
       ${editing&&depth===0?'<span class="grip" title="Drag to reorder">⋮⋮</span>':''}
       <div class="price">${coinsHTML(i.coins||0)}</div>
-      <div class="b"><div class="ti">${titleHTML}${i.hidden?' <span class="hiddenbadge">hidden</span>':''}</div>${i.note?`<div class="nt">${esc(i.note)}</div>`:""}${warnLine}${relLine}${status}${editControls}</div>
+      <div class="b"><div class="ti">${titleHTML}${i.hidden?' <span class="hiddenbadge">hidden</span>':''}</div>${i.note?`<div class="nt">${esc(i.note)}</div>`:""}${warnLine}${status}${editControls}</div>
       <div class="actions">${actions}</div>
     </div>`;
     if(depth===0) return `<div class="itemwrap" data-item="${i.id}" ${editing?'draggable="true"':''}>${cardHTML}${kidHTML}</div>`;
@@ -654,33 +675,47 @@
 
   // ---------- drag & drop (desktop) ----------
   // ---------- drag & drop: live reorder (desktop) ----------
+  let dragKind=null, dragEl=null;
   function wireDnd(){
     app.querySelectorAll('.itemwrap[draggable="true"]').forEach(w=>{
-      w.addEventListener("dragstart",e=>{ w.classList.add("dragging"); e.dataTransfer.effectAllowed="move"; try{e.dataTransfer.setData("text/plain",w.dataset.item);}catch(_){} });
-      w.addEventListener("dragend",()=>{ w.classList.remove("dragging"); commitOrder(); });
+      w.addEventListener("dragstart",e=>{ e.stopPropagation(); dragKind = w.closest('.groupzone')?'member':'unit'; dragEl=w; w.classList.add("dragging"); e.dataTransfer.effectAllowed="move"; try{e.dataTransfer.setData("text/plain",w.dataset.item);}catch(_){} });
+      w.addEventListener("dragend",()=>{ w.classList.remove("dragging"); dragKind=null; dragEl=null; commitOrder(); });
+    });
+    app.querySelectorAll('.group[draggable="true"]').forEach(g=>{
+      g.addEventListener("dragstart",e=>{ dragKind='unit'; dragEl=g; g.classList.add("dragging"); e.dataTransfer.effectAllowed="move"; });
+      g.addEventListener("dragend",()=>{ g.classList.remove("dragging"); dragKind=null; dragEl=null; commitOrder(); });
     });
     app.querySelectorAll(".dropzone").forEach(zone=>{
       zone.addEventListener("dragover",e=>{
+        if(dragKind!=='unit'||!dragEl) return;
         e.preventDefault();
-        const drag=app.querySelector(".itemwrap.dragging"); if(!drag) return;
-        const after=dragAfter(zone, e.clientY);
-        if(after==null) zone.appendChild(drag); else zone.insertBefore(drag, after);
+        const after=dragAfter(zone, e.clientY, ':scope > .itemwrap:not(.dragging), :scope > .group:not(.dragging)');
+        if(after==null) zone.appendChild(dragEl); else zone.insertBefore(dragEl, after);
+      });
+    });
+    app.querySelectorAll(".groupzone").forEach(zone=>{
+      zone.addEventListener("dragover",e=>{
+        if(dragKind!=='member'||!dragEl||dragEl.parentElement!==zone) return;
+        e.preventDefault();
+        const after=dragAfter(zone, e.clientY, ':scope > .itemwrap:not(.dragging)');
+        if(after==null) zone.appendChild(dragEl); else zone.insertBefore(dragEl, after);
       });
     });
   }
-  function dragAfter(zone, y){
-    const els=[...zone.children].filter(c=>c.classList.contains("itemwrap") && !c.classList.contains("dragging"));
+  function dragAfter(zone, y, selector){
+    const els=[...zone.querySelectorAll(selector)];
     let best={off:-Infinity, el:null};
     for(const c of els){ const b=c.getBoundingClientRect(); const off=y-b.top-b.height/2; if(off<0 && off>best.off) best={off, el:c}; }
     return best.el;
   }
   function commitOrder(){
     const ups=[];
+    const assign=(w,secId,kref)=>{ const it=state.items.find(i=>i.id===w.dataset.item); if(it){ if(it.section_id!==secId||it.position!==kref.k){ it.section_id=secId; it.position=kref.k; ups.push(it);} kref.k++; } };
     app.querySelectorAll(".dropzone").forEach(zone=>{
-      const secId=zone.dataset.zone; let k=0;
-      [...zone.children].filter(c=>c.classList.contains("itemwrap")).forEach(w=>{
-        const it=state.items.find(i=>i.id===w.dataset.item);
-        if(it){ if(it.section_id!==secId || it.position!==k){ it.section_id=secId; it.position=k; ups.push(it); } k++; }
+      const secId=zone.dataset.zone; const kref={k:0};
+      [...zone.children].forEach(child=>{
+        if(child.classList.contains("itemwrap")) assign(child, secId, kref);
+        else if(child.classList.contains("group")){ const gz=child.querySelector(".groupzone"); if(gz)[...gz.children].filter(x=>x.classList.contains("itemwrap")).forEach(x=>assign(x,secId,kref)); }
       });
     });
     if(ups.length) Promise.all(ups.map(it=> sb.from("items").update({section_id:it.section_id, position:it.position}).eq("id", it.id)));
@@ -736,7 +771,7 @@
           if(linkVal && linkVal!==savedId){
             const target=state.items.find(x=>x.id===linkVal);
             const grp=(it&&it.link_group)||(target&&target.link_group)||(crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2));
-            await Promise.all([ sb.from("items").update({link_group:grp}).eq("id",savedId), sb.from("items").update({link_group:grp}).eq("id",linkVal) ]);
+            await Promise.all([ sb.from("items").update({link_group:grp, parent_id:null}).eq("id",savedId), sb.from("items").update({link_group:grp, section_id:sec, parent_id:null}).eq("id",linkVal) ]);
           } else if(it && it.link_group){ await sb.from("items").update({link_group:null}).eq("id",savedId); }
         }
         closeModal(); reloadItems();
