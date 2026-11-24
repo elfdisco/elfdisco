@@ -170,12 +170,16 @@ begin
   return inserted > 0;
 end $$;
 
--- Only the original claimer (matching per-browser token) can release.
-create or replace function public.release_claim(p_item_id uuid, p_token text)
+-- Release a claim: automatically on the same browser (token), or from any other
+-- device by entering the name it was claimed with. Names aren't shown to guests.
+create or replace function public.release_claim(p_item_id uuid, p_token text, p_name text default null)
 returns boolean language plpgsql security definer set search_path = public as $$
 declare removed int;
 begin
-  delete from public.claims where item_id = p_item_id and claimer_token = p_token;
+  delete from public.claims
+   where item_id = p_item_id
+     and ( claimer_token = p_token
+           or (p_name is not null and lower(claimer_name) = lower(trim(p_name))) );
   get diagnostics removed = row_count;
   return removed > 0;
 end $$;
@@ -230,7 +234,7 @@ revoke all on function public.set_list_password(uuid,text)      from public, ano
 revoke all on function public.reveal_claims(uuid)               from public, anon;
 
 grant execute on function public.claim_item(uuid,text,text,text)   to anon, authenticated;
-grant execute on function public.release_claim(uuid,text)          to anon, authenticated;
+grant execute on function public.release_claim(uuid,text,text)       to anon, authenticated;
 grant execute on function public.verify_list_password(uuid,text)   to anon, authenticated;
 grant execute on function public.list_has_password(uuid)           to anon, authenticated;
 grant execute on function public.set_list_password(uuid,text)      to authenticated;  -- owner-only

@@ -544,13 +544,23 @@
     const ex = i.url?'<span class="ex">↗</span>':'';
     const titleHTML = i.url && !editing ? `<a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}${ex}</a>` : esc(i.title)+(i.url?ex:"");
     let status="";
-    if(claim){ const mine=claim.claimer_token===me;
-      status=`<div class="claimer"><span class="chip">${claim.kind==='bought'?'bought':'claimed'}</span> by ${esc(claim.claimer_name)}${mine?' (you)':''}</div>`; }
-    else if(i.taken){ status=`<div class="claimer"><span class="chip taken-chip">taken</span>${i.taken_note?' '+esc(i.taken_note):''}</div>`; }
     let actions="";
     if(editing){ actions=`<button class="get ghost" data-edititem="${i.id}">Edit</button>`; }
-    else if(claim && claim.claimer_token===me){ actions=`<button class="get ghost" data-release="${i.id}">Release</button>`; }
-    else if(!isOwner && !taken){ actions=`<button class="get" data-claim="${i.id}">I'll get this</button>`; }
+    if(claim){
+      const mine = claim.claimer_token===me;
+      const label = claim.kind==='bought' ? 'Already bought' : 'Spoken for';
+      const chipCls = claim.kind==='bought' ? 'chip' : 'chip taken-chip';
+      const who = (isOwner && state.revealed) ? ' by '+esc(claim.claimer_name) : '';  // names only when owner peeks
+      status = `<div class="claimer"><span class="${chipCls}">${label}</span>${who}${mine?' · you claimed this':''}</div>`;
+      if(!editing){
+        if(mine) actions=`<button class="get ghost" data-release="${i.id}">Release</button>`;
+        else if(!isOwner) actions=`<button class="mini" data-manage="${i.id}">I claimed this</button>`;
+      }
+    } else if(i.taken){
+      status=`<div class="claimer"><span class="chip taken-chip">taken</span>${i.taken_note?' '+esc(i.taken_note):''}</div>`;
+    } else if(!editing && !isOwner){
+      actions=`<button class="get" data-claim="${i.id}">I'll get this</button>`;
+    }
     const kids = state.items.filter(c=>c.parent_id===i.id && !c.archived).sort((a,b)=>a.position-b.position);
     const kidHTML = kids.length ? `<div class="subitems">${kids.map(c=>renderItem(c,depth+1)).join("")}</div>` : "";
     const editControls = editing ? `<div class="itemedit"><button class="mini" data-subitem="${i.id}">＋ sub-item</button><button class="mini" data-arcitem="${i.id}">Archive</button></div>` : "";
@@ -577,6 +587,7 @@
     // claims
     app.querySelectorAll("[data-claim]").forEach(b=> b.onclick=()=>claimModal(b.dataset.claim));
     app.querySelectorAll("[data-release]").forEach(b=> b.onclick=()=>releaseItem(b.dataset.release));
+    app.querySelectorAll("[data-manage]").forEach(b=> b.onclick=()=>manageClaimModal(b.dataset.manage));
 
     if(editing){
       // title/subtitle save on blur
@@ -768,7 +779,8 @@
     const it=state.items.find(i=>i.id===itemId);
     modal(`<h3>Mark this gift</h3>
       <p class="muted">${esc(it.title)}</p>
-      <label>Your name (so others know it's covered)</label><input id="nm" value="${esc(nameMemo())}"/>
+      <label>Your name</label><input id="nm" value="${esc(nameMemo())}"/>
+      <p class="muted" style="font-size:.8rem;margin:4px 0 0">Only so you can un-claim it later — it isn't shown to other guests.</p>
       <div class="err" id="er"></div>
       <div class="row"><button class="btn" id="will">I'll buy this</button>
       <button class="btn ghost" id="bought">Already bought it</button></div>`, m=>{
@@ -784,10 +796,24 @@
       m.querySelector("#bought").onclick=()=>go("bought");
     });
   }
-  async function releaseItem(itemId){
-    const { data: ok } = await sb.rpc("release_claim",{p_item_id:itemId, p_token:me});
-    if(ok===false){ toast("Only the person who claimed it can release it."); }
+  async function releaseItem(itemId, name){
+    const { data: ok } = await sb.rpc("release_claim",{p_item_id:itemId, p_token:me, p_name:name||null});
+    if(ok===false){ toast(name?"That name doesn't match this claim.":"Only the person who claimed it can release it."); }
     state.claims = await loadClaims(state.list.id); drawList();
+  }
+  // release from another device by entering the name you claimed with
+  function manageClaimModal(itemId){
+    const it=state.items.find(i=>i.id===itemId);
+    modal(`<h3>Un-claim this gift</h3>
+      <p class="muted">${esc(it?it.title:"")}</p>
+      <p class="muted" style="font-size:.9rem">Claimed this already (maybe on another device)? Enter the name you used and I'll release it.</p>
+      <label>Name you claimed with</label><input id="nm" value="${esc(nameMemo())}"/>
+      <div class="err" id="er"></div>
+      <button class="btn wide" id="go">Un-claim it</button>`, m=>{
+      m.querySelector("#go").onclick=async()=>{ const name=m.querySelector("#nm").value.trim();
+        if(!name){ m.querySelector("#er").textContent="Enter the name."; return; }
+        closeModal(); await releaseItem(itemId, name); };
+    });
   }
 
   // ---------- modal plumbing ----------
