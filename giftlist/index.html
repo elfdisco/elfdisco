@@ -7,6 +7,8 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
 <meta name="theme-color" content="#8d3350"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://lypbillwjaeghfpjrgnt.supabase.co" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   /* ---------- LIGHT (rose smoke) ---------- */
@@ -63,7 +65,7 @@
   .guide .gi{display:inline-flex;align-items:center;gap:7px;color:var(--soft);font-size:.9rem;white-space:nowrap}
   .coins{display:inline-flex}
   .coin{width:17px;height:17px;border-radius:50%;background:radial-gradient(circle at 35% 28%,#f5e0a6,var(--gold) 62%,#9a7430);box-shadow:inset 0 0 0 1px rgba(255,255,255,.45),inset 0 0 0 2px rgba(122,90,34,.3),0 1px 2px rgba(0,0,0,.3);display:inline-flex;align-items:center;justify-content:center}
-  .coin::before{content:"£";font-size:10px;font-weight:800;color:#6f4e18;line-height:1}
+  .coin::before{content:"£";font-family:Georgia,"Times New Roman",serif;font-style:normal;font-weight:700;font-size:10.5px;color:#6b4a16;line-height:1}
   .coin:not(:first-child){margin-left:-7px}
   .hint{color:var(--soft);font-size:.92rem;max-width:520px;margin:0 auto 26px;border-left:3px solid var(--teal);padding-left:12px}
   .notice{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:10px;padding:10px 14px;margin:0 auto 22px;max-width:560px;color:var(--soft);font-size:.9rem}
@@ -147,7 +149,9 @@
   .modal h3{font-family:"Fraunces";color:var(--head);margin:0 0 6px}
   .modal .x{float:right;cursor:pointer;color:var(--soft);border:none;background:none;font-size:1.3rem}
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--claret-deep);color:#fff;padding:11px 18px;border-radius:10px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:.92rem}
-  .spin{text-align:center;color:var(--soft);padding:60px 0}
+  .spin{display:flex;flex-direction:column;align-items:center;gap:15px;padding:90px 0;color:var(--soft);font-family:"Fraunces";font-style:italic;font-size:1.05rem}
+  .spinner{width:32px;height:32px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--claret);animation:gspin .8s linear infinite}
+  @keyframes gspin{to{transform:rotate(360deg)}}
   @media (max-width:560px){
     .wrap{padding:24px 14px 80px}
     h1.title{font-size:2.3rem}
@@ -170,7 +174,7 @@
     <button class="iconbtn" id="themeBtn" title="Light / dark">◐</button>
     <button class="iconbtn" id="authBtn"></button>
   </div>
-  <div id="app"><div class="spin">Loading…</div></div>
+  <div id="app"><div class="spin"><div class="spinner"></div><span>one moment…</span></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -191,6 +195,7 @@
   // ---------- small helpers ----------
   const $ = sel => document.querySelector(sel);
   const app = $("#app");
+  const LOADING = '<div class="spin"><div class="spinner"></div><span>one moment…</span></div>';
   const esc = s => (s==null?"":String(s)).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const coinsHTML = n => n>0 ? '<span class="coins">'+Array.from({length:n}).map(()=>'<i class="coin"></i>').join('')+'</span>' : '<span style="color:var(--gold)">—</span>';
   const slugify = s => (s||"").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40) || "list";
@@ -224,16 +229,16 @@
   //  DATA LAYER
   // ===================================================================
   async function resolveList(username, slug){
+    const { data: list } = await sb.from("lists")
+      .select("*, profiles!inner(id,username,display_name), sections(*), tiers(*), items(*)")
+      .eq("slug", slug).eq("profiles.username", username).maybeSingle();
+    if(list){
+      const sort = a => (a||[]).slice().sort((x,y)=>x.position-y.position);
+      return { owner:list.profiles, list, sections:sort(list.sections), tiers:sort(list.tiers), items:sort(list.items) };
+    }
+    // no matching list — real person (show their lists) or nobody?
     const { data: owner } = await sb.from("profiles").select("*").eq("username", username).maybeSingle();
-    if(!owner) return null;
-    const { data: list } = await sb.from("lists").select("*").eq("owner_id", owner.id).eq("slug", slug).maybeSingle();
-    if(!list) return { owner, list:null };
-    const [{data:sections},{data:items},{data:tiers}] = await Promise.all([
-      sb.from("sections").select("*").eq("list_id", list.id).order("position"),
-      sb.from("items").select("*").eq("list_id", list.id).order("position"),
-      sb.from("tiers").select("*").eq("list_id", list.id).order("position"),
-    ]);
-    return { owner, list, sections:sections||[], items:items||[], tiers:tiers||[] };
+    return owner ? { owner, list:null } : null;
   }
   const loadClaims = async listId => (await sb.from("claims").select("*").eq("list_id", listId)).data || [];
   const myLists = async uid => (await sb.from("lists").select("*").eq("owner_id", uid).order("created_at")).data || [];
@@ -280,7 +285,7 @@
   }
   async function route(){
     const r = parseHash();
-    app.innerHTML='<div class="spin">Loading…</div>';
+    app.innerHTML=LOADING;
     try{
       if(r.view==="signin") return renderSignin();
       if(r.view==="setup")  return renderSetup();
