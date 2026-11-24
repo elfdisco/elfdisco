@@ -29,6 +29,7 @@ create table if not exists public.lists (
   theme_dark    text not null default 'ash',
   surprise_mode boolean not null default true,   -- owner can't see claims unless they reveal
   is_archived   boolean not null default false,
+  item_warning  text,                          -- optional note shown as a ⚠ on every item (hover)
   created_at    timestamptz not null default now(),
   unique (owner_id, slug)
 );

@@ -71,14 +71,17 @@
 
   .card{position:relative;display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:14px 16px 14px 19px;margin-bottom:10px;box-shadow:var(--sh);transition:transform .15s,box-shadow .15s}
   .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--claret);border-radius:13px 0 0 13px}
-  .card.drag{opacity:.4} .card.over{outline:2px dashed var(--gold);outline-offset:2px}
+  .itemwrap.dragging{opacity:.4}
+  .dropzone{min-height:10px}
   .card .price{flex:0 0 auto;width:50px;padding-top:3px}
   .card .b{flex:1 1 auto;min-width:0}
   .card .ti{font-family:"Fraunces";font-size:1.22rem;font-weight:600;line-height:1.2;color:var(--ink)}
-  .card .ti a{text-decoration:none;background:linear-gradient(var(--claret),var(--claret)) 0 100%/0 2px no-repeat;transition:background-size .25s;padding-bottom:1px}
-  .card .ti a:hover{background-size:100% 2px}
+  .card .ti a{color:var(--claret);text-decoration:underline;text-decoration-style:dotted;text-decoration-thickness:1.5px;text-underline-offset:3px}
+  .card .ti a:hover{text-decoration-style:solid}
+  .card .ti a .ex{text-decoration:none}
   .card .nt{color:var(--soft);font-size:.92rem;margin-top:3px}
-  .card .ex{font-size:.72rem;color:var(--claret);margin-left:3px}
+  .card .ex{font-size:.8rem;color:var(--claret);margin-left:4px}
+  .warn{color:#c8922e;cursor:help;margin-left:6px;font-size:.95rem}
   .card.taken{opacity:.72}
   .card.taken .ti{text-decoration:line-through;text-decoration-color:var(--soft)}
   .grip{cursor:grab;color:var(--soft);font-size:1.1rem;align-self:center;padding:0 2px;user-select:none}
@@ -451,6 +454,7 @@
     if(!res.list){ app.innerHTML='<div class="panel center"><h2>Not found</h2><p class="muted">No such list.</p></div>'; return; }
     state = { ...res, username, slug, editing:false, revealed:false, claims:[] };
     state.isOwner = !!(session && session.user.id===res.owner.id);
+    state.editing = state.isOwner;   // owners start in edit mode; "View as guest" switches it off
 
     // archived list: guests get sent to the owner's live lists instead
     if(res.list.is_archived && !state.isOwner){
@@ -492,7 +496,7 @@
     let bar="";
     if(isOwner){
       bar = `<div class="editbar">
-        <button class="btn sm" id="editToggle">${editing?"✓ Done editing":"✎ Edit list"}</button>
+        <button class="btn sm" id="editToggle">${editing?"👁 View as guest":"✎ Edit mode"}</button>
         ${editing?`<button class="btn ghost sm" id="addSec">+ Section</button>
           <button class="btn ghost sm" id="editTiers">Price tiers</button>
           <button class="btn ghost sm" id="listSettings">Settings</button>`:""}
@@ -555,8 +559,9 @@
     const showClaims = (!isOwner) || state.revealed;
     const claim = showClaims ? claimFor(i.id) : null;
     const taken = i.taken || !!claim;
-    const ex = i.url?'<span class="ex">↗</span>':'';
+    const ex = i.url?'<span class="ex">↗ shop</span>':'';
     const titleHTML = i.url && !editing ? `<a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}${ex}</a>` : esc(i.title)+(i.url?ex:"");
+    const warnHTML = state.list.item_warning ? ` <span class="warn" title="${esc(state.list.item_warning)}">⚠</span>` : "";
     let status="";
     let actions="";
     if(editing){ actions=`<button class="get ghost" data-edititem="${i.id}">Edit</button>`; }
@@ -568,22 +573,24 @@
       status = `<div class="claimer"><span class="${chipCls}">${label}</span>${who}${mine?' · you claimed this':''}</div>`;
       if(!editing){
         if(mine) actions=`<button class="get ghost" data-release="${i.id}">Release</button>`;
-        else if(!isOwner) actions=`<button class="mini" data-manage="${i.id}">I claimed this</button>`;
+        else actions=`<button class="mini" data-manage="${i.id}">I claimed this</button>`;
       }
     } else if(i.taken){
       status=`<div class="claimer"><span class="chip taken-chip">taken</span>${i.taken_note?' '+esc(i.taken_note):''}</div>`;
-    } else if(!editing && !isOwner){
+    } else if(!editing){
       actions=`<button class="get" data-claim="${i.id}">I'll get this</button>`;
     }
     const kids = state.items.filter(c=>c.parent_id===i.id && !c.archived).sort((a,b)=>a.position-b.position);
     const kidHTML = kids.length ? `<div class="subitems">${kids.map(c=>renderItem(c,depth+1)).join("")}</div>` : "";
     const editControls = editing ? `<div class="itemedit"><button class="mini" data-subitem="${i.id}">＋ sub-item</button><button class="mini" data-arcitem="${i.id}">Archive</button></div>` : "";
-    return `<div class="card ${taken?'taken':''} ${depth>0?'subitem':''}" data-item="${i.id}" ${editing&&depth===0?'draggable="true"':''}>
-      ${editing&&depth===0?'<span class="grip" title="Drag to reorder / move">⋮⋮</span>':''}
+    const cardHTML = `<div class="card ${taken?'taken':''} ${depth>0?'subitem':''}" data-item="${i.id}">
+      ${editing&&depth===0?'<span class="grip" title="Drag to reorder">⋮⋮</span>':''}
       <div class="price">${coinsHTML(i.coins||0)}</div>
-      <div class="b"><div class="ti">${titleHTML}</div>${i.note?`<div class="nt">${esc(i.note)}</div>`:""}${status}${editControls}</div>
+      <div class="b"><div class="ti">${titleHTML}${warnHTML}</div>${i.note?`<div class="nt">${esc(i.note)}</div>`:""}${status}${editControls}</div>
       <div class="actions">${actions}</div>
-    </div>${kidHTML}`;
+    </div>`;
+    if(depth===0) return `<div class="itemwrap" data-item="${i.id}" ${editing?'draggable="true"':''}>${cardHTML}${kidHTML}</div>`;
+    return cardHTML + kidHTML;
   }
   async function archiveItem(id, on){ await sb.from("items").update({archived:on}).eq("id", id); reloadItems(); }
 
@@ -630,39 +637,37 @@
   }
 
   // ---------- drag & drop (desktop) ----------
+  // ---------- drag & drop: live reorder (desktop) ----------
   function wireDnd(){
-    let dragId=null;
-    app.querySelectorAll('.card[draggable="true"]').forEach(card=>{
-      card.addEventListener("dragstart",e=>{ dragId=card.dataset.item; card.classList.add("drag"); e.dataTransfer.effectAllowed="move"; });
-      card.addEventListener("dragend",()=>{ dragId=null; card.classList.remove("drag"); app.querySelectorAll(".over").forEach(x=>x.classList.remove("over")); });
-      card.addEventListener("dragover",e=>{ e.preventDefault(); card.classList.add("over"); });
-      card.addEventListener("dragleave",()=> card.classList.remove("over"));
-      card.addEventListener("drop",e=>{ e.preventDefault(); card.classList.remove("over"); if(dragId&&dragId!==card.dataset.item) moveItem(dragId, card.dataset.item); });
+    app.querySelectorAll('.itemwrap[draggable="true"]').forEach(w=>{
+      w.addEventListener("dragstart",e=>{ w.classList.add("dragging"); e.dataTransfer.effectAllowed="move"; try{e.dataTransfer.setData("text/plain",w.dataset.item);}catch(_){} });
+      w.addEventListener("dragend",()=>{ w.classList.remove("dragging"); commitOrder(); });
     });
-    app.querySelectorAll(".dropzone").forEach(z=>{
-      z.addEventListener("dragover",e=>e.preventDefault());
-      z.addEventListener("drop",e=>{ e.preventDefault(); if(dragId && !e.target.closest(".card")) moveItemToSection(dragId, z.dataset.zone); });
+    app.querySelectorAll(".dropzone").forEach(zone=>{
+      zone.addEventListener("dragover",e=>{
+        e.preventDefault();
+        const drag=app.querySelector(".itemwrap.dragging"); if(!drag) return;
+        const after=dragAfter(zone, e.clientY);
+        if(after==null) zone.appendChild(drag); else zone.insertBefore(drag, after);
+      });
     });
   }
-  function moveItem(dragId, targetId){
-    const items=state.items; const a=items.find(i=>i.id===dragId), b=items.find(i=>i.id===targetId);
-    if(!a||!b) return;
-    a.section_id=b.section_id;
-    const inSec=items.filter(i=>i.section_id===b.section_id && i.id!==dragId);
-    const bi=inSec.indexOf(b); inSec.splice(bi,0,a);
-    inSec.forEach((it,k)=> it.position=k);
-    drawList();                         // instant feedback
-    persistOrder(b.section_id, inSec);  // save in the background
+  function dragAfter(zone, y){
+    const els=[...zone.children].filter(c=>c.classList.contains("itemwrap") && !c.classList.contains("dragging"));
+    let best={off:-Infinity, el:null};
+    for(const c of els){ const b=c.getBoundingClientRect(); const off=y-b.top-b.height/2; if(off<0 && off>best.off) best={off, el:c}; }
+    return best.el;
   }
-  function moveItemToSection(dragId, secId){
-    const a=state.items.find(i=>i.id===dragId); if(!a) return; a.section_id=secId;
-    const inSec=state.items.filter(i=>i.section_id===secId);
-    inSec.forEach((it,k)=> it.position=k);
-    drawList();
-    persistOrder(secId, inSec);
-  }
-  function persistOrder(secId, ordered){
-    return Promise.all(ordered.map((it,k)=> sb.from("items").update({section_id:secId, position:k}).eq("id", it.id)));
+  function commitOrder(){
+    const ups=[];
+    app.querySelectorAll(".dropzone").forEach(zone=>{
+      const secId=zone.dataset.zone; let k=0;
+      [...zone.children].filter(c=>c.classList.contains("itemwrap")).forEach(w=>{
+        const it=state.items.find(i=>i.id===w.dataset.item);
+        if(it){ if(it.section_id!==secId || it.position!==k){ it.section_id=secId; it.position=k; ups.push(it); } k++; }
+      });
+    });
+    if(ups.length) Promise.all(ups.map(it=> sb.from("items").update({section_id:it.section_id, position:it.position}).eq("id", it.id)));
   }
   async function reloadItems(){
     const { data } = await sb.from("items").select("*").eq("list_id", state.list.id).order("position");
@@ -767,6 +772,11 @@
       <p class="muted" style="font-size:.82rem">A light gate for casual snooping — not bank-grade. Clear it to remove.</p>
       <button class="btn sm" id="savepw">Save password</button>
       <hr style="border:none;border-top:1px solid var(--line);margin:16px 0"/>
+      <label>Warning note on every item (optional)</label>
+      <input id="warn" value="${esc(l.item_warning||"")}" placeholder="e.g. please check sizes with me first"/>
+      <p class="muted" style="font-size:.82rem">Shows a ⚠ beside each item; the note appears on hover.</p>
+      <button class="btn sm" id="savewarn">Save note</button>
+      <hr style="border:none;border-top:1px solid var(--line);margin:16px 0"/>
       <button class="btn ghost wide" id="arch">${l.is_archived?"Unarchive this list":"Archive this list"}</button>
       <p class="muted" style="font-size:.82rem">Archiving hides it from guests — anyone on its link is sent to your other live lists instead.</p>
       <div class="err" id="er"></div>`, m=>{
@@ -781,6 +791,8 @@
       };
       m.querySelector("#savepw").onclick=async()=>{ const { error }=await sb.rpc("set_list_password",{p_list_id:l.id, p_password:m.querySelector("#pw").value});
         m.querySelector("#er").textContent=error?error.message:""; if(!error) toast("Password updated."); };
+      m.querySelector("#savewarn").onclick=async()=>{ const v=m.querySelector("#warn").value.trim()||null;
+        await sb.from("lists").update({item_warning:v}).eq("id",l.id); l.item_warning=v; closeModal(); drawList(); toast("Saved."); };
       m.querySelector("#arch").onclick=async()=>{ await sb.from("lists").update({is_archived:!l.is_archived}).eq("id",l.id); l.is_archived=!l.is_archived; closeModal(); drawList(); };
     });
   }
