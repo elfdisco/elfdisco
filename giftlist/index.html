@@ -86,6 +86,15 @@
   .get.ghost{background:none;color:var(--claret);border:1px solid var(--line)}
   .chip{font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;background:var(--teal);color:var(--chip-ink);border-radius:6px;padding:3px 8px;white-space:nowrap}
   .claimer{color:var(--soft);font-size:.86rem;margin-top:4px}
+  .subitems{margin:-2px 0 12px 30px;position:relative}
+  .subitems::before{content:"";position:absolute;left:-14px;top:0;bottom:12px;width:2px;background:var(--line);border-radius:2px}
+  .card.subitem{padding:11px 14px 11px 16px}
+  .card.subitem .ti{font-size:1.05rem}
+  .card.subitem::before{width:4px}
+  .itemedit{margin-top:8px;display:flex;gap:8px}
+  .mini{font-family:inherit;font-size:.75rem;font-weight:600;color:var(--soft);background:none;border:1px solid var(--line);border-radius:7px;padding:4px 9px;cursor:pointer}
+  .mini:hover{color:var(--ink)}
+  .taken-chip{background:var(--soft);color:var(--card)}
 
   .btn{font-family:inherit;font-weight:600;font-size:.92rem;background:var(--claret);color:var(--btn-ink);border:none;border-radius:10px;padding:11px 18px;cursor:pointer}
   .btn:hover{background:var(--claret-deep)}
@@ -448,15 +457,12 @@
       </div>`;
     }
 
-    // which claims to show (owner sees none unless revealed)
-    const showClaims = (!isOwner) || state.revealed;
-
-    // build section blocks
+    // build section blocks (claimed / taken items stay in place, greyed)
     const visibleSections = sections.filter(s=> s.visible || isOwner);
     let secHTML = visibleSections.map((s,idx)=>{
-      const own = items.filter(i=>i.section_id===s.id);
-      const available = own.filter(i=> !(showClaims && claimFor(i.id)));
-      const cards = available.map(i=> itemCard(i, s)).join("") || (editing?"":'<p class="muted" style="margin:4px 0 14px">—</p>');
+      const top = items.filter(i=> i.section_id===s.id && !i.parent_id && !i.archived)
+                       .sort((a,b)=>a.position-b.position);
+      const cards = top.map(i=> renderItem(i,0)).join("") || (editing?"":'<p class="muted" style="margin:4px 0 14px">—</p>');
       return `<div class="sec" data-sec="${s.id}">
         <div class="sec-h"><span class="n">${String(idx+1).padStart(2,"0")}</span>
           <h2 ${editing?'contenteditable data-edit-sec="'+s.id+'"':''}>${esc(s.title)}</h2>
@@ -470,20 +476,16 @@
       </div>`;
     }).join("");
 
-    // taken compartment
-    let takenHTML="";
-    if(showClaims){
-      const taken = items.filter(i=> claimFor(i.id));
-      if(taken.length){
-        takenHTML = `<div class="sec"><div class="sec-h"><h2>Spoken for</h2><span class="ln"></span></div>` +
-          taken.map(i=>{ const c=claimFor(i.id); const mine=c.claimer_token===me;
-            return `<div class="card taken"><div class="price">${coinsHTML(i.coins||0)}</div>
-              <div class="b"><div class="ti">${esc(i.title)}</div>
-              <div class="claimer"><span class="chip">${c.kind==='bought'?'bought':'claimed'}</span> by ${esc(c.claimer_name)}${mine?' (you)':''}</div></div>
-              ${mine?`<div class="actions"><button class="get ghost" data-release="${i.id}">Release</button></div>`:""}
-            </div>`;
-          }).join("") + `</div>`;
-      }
+    // archive compartment — owner moves things here manually
+    const archived = items.filter(i=> i.archived).sort((a,b)=>a.position-b.position);
+    let archHTML="";
+    if(archived.length){
+      archHTML = `<div class="sec"><div class="sec-h"><h2>Archived</h2><span class="ln"></span></div>` +
+        archived.map(i=>`<div class="card taken subitem" data-item="${i.id}">
+          <div class="price">${coinsHTML(i.coins||0)}</div>
+          <div class="b"><div class="ti">${esc(i.title)}</div>${i.taken_note?`<div class="claimer">${esc(i.taken_note)}</div>`:""}</div>
+          ${isOwner&&editing?`<div class="actions"><button class="get ghost" data-unarc="${i.id}">Restore</button></div>`:""}
+        </div>`).join("") + `</div>`;
     }
 
     const ownerNote = isOwner ? `<div class="notice">You're viewing <b>your own</b> list. Claims are hidden so your surprise is safe — use <b>Reveal claims</b> only if you really want to peek.</div>` : "";
@@ -498,27 +500,38 @@
       ${bar}
       ${ownerNote}${guide}${hint}
       ${secHTML}
-      ${takenHTML}
+      ${archHTML}
     </div>`;
 
     wireList();
   }
 
-  function itemCard(i, s){
-    const editing = state.editing;
+  function renderItem(i, depth){
+    const editing=state.editing, isOwner=state.isOwner;
+    const showClaims = (!isOwner) || state.revealed;
+    const claim = showClaims ? claimFor(i.id) : null;
+    const taken = i.taken || !!claim;
     const ex = i.url?'<span class="ex">↗</span>':'';
     const titleHTML = i.url && !editing ? `<a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}${ex}</a>` : esc(i.title)+(i.url?ex:"");
-    return `<div class="card" data-item="${i.id}" ${editing?'draggable="true"':''}>
-      ${editing?'<span class="grip" title="Drag to reorder / move">⋮⋮</span>':''}
+    let status="";
+    if(claim){ const mine=claim.claimer_token===me;
+      status=`<div class="claimer"><span class="chip">${claim.kind==='bought'?'bought':'claimed'}</span> by ${esc(claim.claimer_name)}${mine?' (you)':''}</div>`; }
+    else if(i.taken){ status=`<div class="claimer"><span class="chip taken-chip">taken</span>${i.taken_note?' '+esc(i.taken_note):''}</div>`; }
+    let actions="";
+    if(editing){ actions=`<button class="get ghost" data-edititem="${i.id}">Edit</button>`; }
+    else if(claim && claim.claimer_token===me){ actions=`<button class="get ghost" data-release="${i.id}">Release</button>`; }
+    else if(!isOwner && !taken){ actions=`<button class="get" data-claim="${i.id}">I'll get this</button>`; }
+    const kids = state.items.filter(c=>c.parent_id===i.id && !c.archived).sort((a,b)=>a.position-b.position);
+    const kidHTML = kids.length ? `<div class="subitems">${kids.map(c=>renderItem(c,depth+1)).join("")}</div>` : "";
+    const editControls = editing ? `<div class="itemedit"><button class="mini" data-subitem="${i.id}">＋ sub-item</button><button class="mini" data-arcitem="${i.id}">Archive</button></div>` : "";
+    return `<div class="card ${taken?'taken':''} ${depth>0?'subitem':''}" data-item="${i.id}" ${editing&&depth===0?'draggable="true"':''}>
+      ${editing&&depth===0?'<span class="grip" title="Drag to reorder / move">⋮⋮</span>':''}
       <div class="price">${coinsHTML(i.coins||0)}</div>
-      <div class="b"><div class="ti">${titleHTML}</div>${i.note?`<div class="nt">${esc(i.note)}</div>`:""}</div>
-      <div class="actions">
-        ${editing
-          ? `<button class="get ghost" data-edititem="${i.id}">Edit</button>`
-          : `<button class="get" data-claim="${i.id}">I'll get this</button>`}
-      </div>
-    </div>`;
+      <div class="b"><div class="ti">${titleHTML}</div>${i.note?`<div class="nt">${esc(i.note)}</div>`:""}${status}${editControls}</div>
+      <div class="actions">${actions}</div>
+    </div>${kidHTML}`;
   }
+  async function archiveItem(id, on){ await sb.from("items").update({archived:on}).eq("id", id); reloadItems(); }
 
   // ---------- wiring for the list view ----------
   function wireList(){
@@ -541,6 +554,9 @@
       app.querySelectorAll("[data-edit-sec]").forEach(h=> h.onblur=()=>{ const t=h.textContent.trim(); if(t) sb.from("sections").update({title:t}).eq("id",h.dataset.editSec).then(()=>{}); });
       app.querySelectorAll("[data-additem]").forEach(b=> b.onclick=()=>itemModal(null, b.dataset.additem));
       app.querySelectorAll("[data-edititem]").forEach(b=> b.onclick=()=>itemModal(b.dataset.edititem));
+      app.querySelectorAll("[data-subitem]").forEach(b=> b.onclick=()=>itemModal(null, null, b.dataset.subitem));
+      app.querySelectorAll("[data-arcitem]").forEach(b=> b.onclick=()=>archiveItem(b.dataset.arcitem, true));
+      app.querySelectorAll("[data-unarc]").forEach(b=> b.onclick=()=>archiveItem(b.dataset.unarc, false));
       app.querySelectorAll("[data-delsec]").forEach(b=> b.onclick=()=>delSection(b.dataset.delsec));
       app.querySelectorAll("[data-vis]").forEach(b=> b.onclick=()=>toggleSectionVis(b.dataset.vis, b.dataset.on==="1"));
       wireDnd();
@@ -596,31 +612,45 @@
   }
 
   // ---------- item add / edit modal ----------
-  function itemModal(itemId, sectionId){
+  function itemModal(itemId, sectionId, parentId){
     const it = itemId ? state.items.find(i=>i.id===itemId) : null;
-    const secOpts = state.sections.map(s=>`<option value="${s.id}" ${((it&&it.section_id===s.id)||(!it&&s.id===sectionId))?"selected":""}>${esc(s.title)}</option>`).join("");
+    const parent = parentId ? state.items.find(i=>i.id===parentId)
+                 : (it && it.parent_id ? state.items.find(i=>i.id===it.parent_id) : null);
+    const isSub = !!(parentId || (it && it.parent_id));
+    const defSec = it ? it.section_id : (parent ? parent.section_id : sectionId);
+    const secOpts = state.sections.map(s=>`<option value="${s.id}" ${s.id===defSec?"selected":""}>${esc(s.title)}</option>`).join("");
     const tierOpts = `<option value="">— / returnable</option>`+state.tiers.map(t=>`<option value="${t.coins}" ${it&&it.coins===t.coins?"selected":""}>${"●".repeat(t.coins)} ${esc(t.hint)}</option>`).join("");
     modal(`
-      <h3>${it?"Edit item":"Add item"}</h3>
+      <h3>${it?"Edit item":(isSub?"Add sub-item":"Add item")}</h3>
+      ${parent?`<p class="muted" style="font-size:.85rem">Under: <b>${esc(parent.title)}</b></p>`:""}
       <label>What is it?</label><input id="t" value="${esc(it?it.title:"")}"/>
-      <label>Link (optional)</label><input id="u" value="${esc(it?it.url:"")}" placeholder="https://…"/>
-      <label>Note (optional — size, colour, why…)</label><textarea id="n">${esc(it?it.note:"")}</textarea>
+      <label>Link (optional)</label><input id="u" value="${esc(it&&it.url?it.url:"")}" placeholder="https://…"/>
+      <label>Note (optional — size, colour, why…)</label><textarea id="n">${esc(it&&it.note?it.note:"")}</textarea>
       <label>Price</label><select id="c">${tierOpts}</select>
-      <label>Section</label><select id="s">${secOpts}</select>
+      ${isSub?"":`<label>Section</label><select id="s">${secOpts}</select>`}
+      <label style="display:flex;align-items:center;gap:8px;margin-top:14px"><input type="checkbox" id="tk" style="width:auto" ${it&&it.taken?"checked":""}/> Mark as already taken (greyed for everyone)</label>
+      <input id="tn" placeholder="taken note, e.g. 'Dad's getting this'" value="${esc(it&&it.taken_note?it.taken_note:"")}"/>
       <div class="err" id="er"></div>
       <div class="row"><button class="btn" id="go">${it?"Save":"Add"}</button>
-      ${it?'<button class="btn ghost" id="del">Delete</button>':''}</div>
+      ${it?`<button class="btn ghost" id="arc">${it.archived?"Restore":"Archive"}</button><button class="btn ghost" id="del">Delete</button>`:''}</div>
     `, m=>{
       m.querySelector("#go").onclick=async()=>{
         const title=m.querySelector("#t").value.trim(); if(!title){ m.querySelector("#er").textContent="Needs a name."; return; }
+        const sec = isSub ? defSec : m.querySelector("#s").value;
         const payload={ title, url:m.querySelector("#u").value.trim()||null, note:m.querySelector("#n").value.trim()||null,
-          coins:m.querySelector("#c").value?parseInt(m.querySelector("#c").value):null, section_id:m.querySelector("#s").value };
+          coins:m.querySelector("#c").value?parseInt(m.querySelector("#c").value):null, section_id:sec,
+          taken:m.querySelector("#tk").checked, taken_note:m.querySelector("#tn").value.trim()||null };
         if(it){ await sb.from("items").update(payload).eq("id", it.id); }
-        else { const pos=state.items.filter(i=>i.section_id===payload.section_id).length;
-               await sb.from("items").insert({...payload, list_id:state.list.id, position:pos}); }
+        else { const pos=state.items.filter(i=> parentId ? i.parent_id===parentId : (i.section_id===sec && !i.parent_id)).length;
+               await sb.from("items").insert({...payload, list_id:state.list.id, parent_id:parentId||null, position:pos}); }
         closeModal(); reloadItems();
       };
-      if(it) m.querySelector("#del").onclick=async()=>{ await sb.from("items").delete().eq("id", it.id); closeModal(); reloadItems(); };
+      if(it){
+        m.querySelector("#arc").onclick=async()=>{ await sb.from("items").update({archived:!it.archived}).eq("id", it.id); closeModal(); reloadItems(); };
+        m.querySelector("#del").onclick=async()=>{ const hasKids=state.items.some(x=>x.parent_id===it.id);
+          if(!confirm("Delete this item"+(hasKids?" and its sub-items":"")+"?")) return;
+          await sb.from("items").delete().eq("id", it.id); closeModal(); reloadItems(); };
+      }
     });
   }
 

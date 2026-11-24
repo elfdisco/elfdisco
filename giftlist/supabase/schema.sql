@@ -69,6 +69,10 @@ create table if not exists public.items (
   note       text,
   coins      int,                            -- matches a tier; null = "no idea / returnable"
   position   int not null default 0,
+  parent_id  uuid references public.items(id) on delete cascade,  -- sub-items / follow-on thoughts
+  archived   boolean not null default false,  -- owner moved it to the Archived section
+  taken      boolean not null default false,  -- owner marked it taken (visible to everyone)
+  taken_note text,                            -- e.g. "Dad's getting this"
   created_at timestamptz not null default now()
 );
 
