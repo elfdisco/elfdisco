@@ -75,6 +75,7 @@ create table if not exists public.items (
   taken      boolean not null default false,  -- owner marked it taken (visible to everyone)
   taken_note text,                            -- e.g. "Dad's getting this"
   hidden     boolean not null default false,  -- hidden from guests, still visible to the owner
+  link_group uuid,                            -- peer-link: items sharing a value are "related"
   created_at timestamptz not null default now()
 );
 

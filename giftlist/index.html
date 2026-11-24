@@ -81,7 +81,9 @@
   .card .ti a .ex{text-decoration:none}
   .card .nt{color:var(--soft);font-size:.92rem;margin-top:3px}
   .card .ex{font-size:.8rem;color:var(--claret);margin-left:4px}
-  .warn{color:#c8922e;cursor:help;margin-left:6px;font-size:.95rem}
+  .itemwarn{display:inline-flex;align-items:center;gap:6px;margin-top:8px;font-size:.82rem;line-height:1.35;color:var(--gold);background:rgba(200,154,78,.15);border:1px solid rgba(200,154,78,.42);border-radius:8px;padding:4px 10px}
+  .itemwarn svg{flex:0 0 auto}
+  .related{display:inline-flex;align-items:center;gap:5px;margin-top:7px;font-size:.8rem;color:var(--soft)}
   .card.taken{opacity:.72}
   .card.taken .ti{text-decoration:line-through;text-decoration-color:var(--soft)}
   .grip{cursor:grab;color:var(--soft);font-size:1.1rem;align-self:center;padding:0 2px;user-select:none}
@@ -566,7 +568,9 @@
     const titleHTML = i.url && !editing ? `<a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}${ex}</a>` : esc(i.title)+(i.url?ex:"");
     const sec = state.sections.find(s=>s.id===i.section_id);
     const warnMsgs = [sec&&sec.warning, state.list.item_warning].filter(Boolean);
-    const warnHTML = warnMsgs.length ? ` <span class="warn" title="${esc(warnMsgs.join(' — '))}">⚠</span>` : "";
+    const warnLine = warnMsgs.length ? `<div class="itemwarn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12" y2="17.01"/></svg><span>${esc(warnMsgs.join(' · '))}</span></div>` : "";
+    const relItems = i.link_group ? state.items.filter(x=>x.link_group && x.link_group===i.link_group && x.id!==i.id) : [];
+    const relLine = relItems.length ? `<div class="related">↔ related to ${relItems.map(r=>esc(r.title)).join(', ')}</div>` : "";
     let status="";
     let actions="";
     if(editing){ actions=`<button class="get ghost" data-edititem="${i.id}">Edit</button>`; }
@@ -591,7 +595,7 @@
     const cardHTML = `<div class="card ${taken?'taken':''} ${i.hidden?'ishidden':''} ${depth>0?'subitem':''}" data-item="${i.id}">
       ${editing&&depth===0?'<span class="grip" title="Drag to reorder">⋮⋮</span>':''}
       <div class="price">${coinsHTML(i.coins||0)}</div>
-      <div class="b"><div class="ti">${titleHTML}${warnHTML}${i.hidden?' <span class="hiddenbadge">hidden</span>':''}</div>${i.note?`<div class="nt">${esc(i.note)}</div>`:""}${status}${editControls}</div>
+      <div class="b"><div class="ti">${titleHTML}${i.hidden?' <span class="hiddenbadge">hidden</span>':''}</div>${i.note?`<div class="nt">${esc(i.note)}</div>`:""}${warnLine}${relLine}${status}${editControls}</div>
       <div class="actions">${actions}</div>
     </div>`;
     if(depth===0) return `<div class="itemwrap" data-item="${i.id}" ${editing?'draggable="true"':''}>${cardHTML}${kidHTML}</div>`;
@@ -689,20 +693,25 @@
   // ---------- item add / edit modal ----------
   function itemModal(itemId, sectionId, parentId){
     const it = itemId ? state.items.find(i=>i.id===itemId) : null;
-    const parent = parentId ? state.items.find(i=>i.id===parentId)
-                 : (it && it.parent_id ? state.items.find(i=>i.id===it.parent_id) : null);
-    const isSub = !!(parentId || (it && it.parent_id));
-    const defSec = it ? it.section_id : (parent ? parent.section_id : sectionId);
+    const quickSub = !!(parentId && !it);          // adding a sub-item via the ＋ button
+    const curParent = it && it.parent_id ? it.parent_id : (parentId||"");
+    const defSec = it ? it.section_id : (parentId ? (state.items.find(x=>x.id===parentId)||{}).section_id : sectionId);
     const secOpts = state.sections.map(s=>`<option value="${s.id}" ${s.id===defSec?"selected":""}>${esc(s.title)}</option>`).join("");
     const tierOpts = `<option value="">— / returnable</option>`+state.tiers.map(t=>`<option value="${t.coins}" ${it&&it.coins===t.coins?"selected":""}>${"●".repeat(t.coins)} ${esc(t.hint)}</option>`).join("");
+    const others = state.items.filter(x=> x.id!==(it&&it.id));
+    const parentOpts = `<option value="">— none (keep top-level)</option>`+others.filter(x=>!x.parent_id).map(x=>`<option value="${x.id}" ${curParent===x.id?"selected":""}>${esc(x.title)}</option>`).join("");
+    const curLink = it && it.link_group ? state.items.find(x=>x.link_group===it.link_group && x.id!==it.id) : null;
+    const linkOpts = `<option value="">— none</option>`+others.map(x=>`<option value="${x.id}" ${curLink&&curLink.id===x.id?"selected":""}>${esc(x.title)}</option>`).join("");
     modal(`
-      <h3>${it?"Edit item":(isSub?"Add sub-item":"Add item")}</h3>
-      ${parent?`<p class="muted" style="font-size:.85rem">Under: <b>${esc(parent.title)}</b></p>`:""}
+      <h3>${it?"Edit item":(quickSub?"Add sub-item":"Add item")}</h3>
+      ${quickSub?`<p class="muted" style="font-size:.85rem">Under: <b>${esc((state.items.find(x=>x.id===parentId)||{}).title||"")}</b></p>`:""}
       <label>What is it?</label><input id="t" value="${esc(it?it.title:"")}"/>
       <label>Link (optional)</label><input id="u" value="${esc(it&&it.url?it.url:"")}" placeholder="https://…"/>
       <label>Note (optional — size, colour, why…)</label><textarea id="n">${esc(it&&it.note?it.note:"")}</textarea>
       <label>Price</label><select id="c">${tierOpts}</select>
-      ${isSub?"":`<label>Section</label><select id="s">${secOpts}</select>`}
+      <label>Section</label><select id="s">${secOpts}</select>
+      ${quickSub?"":`<label>Make this a sub-item of (optional)</label><select id="par">${parentOpts}</select>
+      <label>Or link as “related to” another item (optional)</label><select id="lnk">${linkOpts}</select>`}
       <label style="display:flex;align-items:center;gap:8px;margin-top:14px"><input type="checkbox" id="tk" style="width:auto" ${it&&it.taken?"checked":""}/> Mark as already taken (greyed for everyone)</label>
       <input id="tn" placeholder="taken note, e.g. 'Dad's getting this'" value="${esc(it&&it.taken_note?it.taken_note:"")}"/>
       <label style="display:flex;align-items:center;gap:8px;margin-top:10px"><input type="checkbox" id="hd" style="width:auto" ${it&&it.hidden?"checked":""}/> Hide from guests (still visible to you)</label>
@@ -712,13 +721,24 @@
     `, m=>{
       m.querySelector("#go").onclick=async()=>{
         const title=m.querySelector("#t").value.trim(); if(!title){ m.querySelector("#er").textContent="Needs a name."; return; }
-        const sec = isSub ? defSec : m.querySelector("#s").value;
+        const parVal = quickSub ? (parentId||null) : (m.querySelector("#par").value||null);
+        let sec = m.querySelector("#s").value;
+        if(parVal){ const p=state.items.find(x=>x.id===parVal); if(p) sec=p.section_id; }   // sub-item lives in parent's section
         const payload={ title, url:m.querySelector("#u").value.trim()||null, note:m.querySelector("#n").value.trim()||null,
-          coins:m.querySelector("#c").value?parseInt(m.querySelector("#c").value):null, section_id:sec,
+          coins:m.querySelector("#c").value?parseInt(m.querySelector("#c").value):null, section_id:sec, parent_id:parVal,
           taken:m.querySelector("#tk").checked, taken_note:m.querySelector("#tn").value.trim()||null, hidden:m.querySelector("#hd").checked };
-        if(it){ await sb.from("items").update(payload).eq("id", it.id); }
-        else { const pos=state.items.filter(i=> parentId ? i.parent_id===parentId : (i.section_id===sec && !i.parent_id)).length;
-               await sb.from("items").insert({...payload, list_id:state.list.id, parent_id:parentId||null, position:pos}); }
+        let savedId;
+        if(it){ await sb.from("items").update(payload).eq("id", it.id); savedId=it.id; }
+        else { const pos=state.items.filter(i=> parVal ? i.parent_id===parVal : (i.section_id===sec && !i.parent_id)).length;
+               const { data }=await sb.from("items").insert({...payload, list_id:state.list.id, position:pos}).select().maybeSingle(); savedId=data&&data.id; }
+        if(!quickSub && savedId){   // peer-link handling
+          const linkVal=m.querySelector("#lnk").value;
+          if(linkVal && linkVal!==savedId){
+            const target=state.items.find(x=>x.id===linkVal);
+            const grp=(it&&it.link_group)||(target&&target.link_group)||(crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2));
+            await Promise.all([ sb.from("items").update({link_group:grp}).eq("id",savedId), sb.from("items").update({link_group:grp}).eq("id",linkVal) ]);
+          } else if(it && it.link_group){ await sb.from("items").update({link_group:null}).eq("id",savedId); }
+        }
         closeModal(); reloadItems();
       };
       if(it){
