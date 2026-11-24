@@ -77,7 +77,8 @@
   .group::before{content:"";position:absolute;left:3px;top:7px;bottom:13px;width:3px;border-radius:3px;background:var(--gold);opacity:.85}
   .group.dragging{opacity:.4}
   .grouphead{display:flex;align-items:center;gap:7px;margin-bottom:6px}
-  .grouplabel{font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--gold)}
+  .grouplabel{font-size:.68rem;letter-spacing:.1em;font-weight:700;color:var(--gold)}
+  .grouplabel[contenteditable]{outline:none;border-bottom:1px dashed rgba(200,154,78,.55);cursor:text;padding-bottom:1px}
   .groupzone{min-height:6px}
   .card .price{flex:0 0 auto;width:50px;padding-top:3px}
   .card .b{flex:1 1 auto;min-width:0}
@@ -576,8 +577,9 @@
     return units.map(u=>{
       if(u.type==='item' || u.items.length<2) return u.items.map(m=>renderItem(m,0)).join("");
       const members=u.items.slice().sort((a,b)=>a.position-b.position);
+      const label=(members.find(x=>x.link_label)||{}).link_label || 'Linked';
       return `<div class="group" data-group="${u.key}" ${editing?'draggable="true"':''}>
-        <div class="grouphead">${editing?'<span class="grip" title="Drag the whole group">⋮⋮</span>':''}<span class="grouplabel">linked</span></div>
+        <div class="grouphead">${editing?'<span class="grip" title="Drag the whole group">⋮⋮</span>':''}<span class="grouplabel" ${editing?`contenteditable data-grouplabel="${u.key}" title="Click to rename this group"`:''}>${esc(label)}</span></div>
         <div class="groupzone" data-group="${u.key}">${members.map(m=>renderItem(m,0)).join("")}</div>
       </div>`;
     }).join("");
@@ -658,6 +660,11 @@
       app.querySelectorAll("[data-unarc]").forEach(b=> b.onclick=()=>archiveItem(b.dataset.unarc, false));
       app.querySelectorAll("[data-delsec]").forEach(b=> b.onclick=()=>delSection(b.dataset.delsec));
       app.querySelectorAll("[data-secwarn]").forEach(b=> b.onclick=()=>sectionWarnModal(b.dataset.secwarn));
+      app.querySelectorAll("[data-grouplabel]").forEach(el=> el.onblur=()=>{
+        const v=el.textContent.trim(); const lbl=(v && v.toLowerCase()!=='linked') ? v : null;
+        state.items.forEach(it=>{ if(it.link_group===el.dataset.grouplabel) it.link_label=lbl; });
+        sb.from("items").update({link_label:lbl}).eq("link_group", el.dataset.grouplabel);
+      });
       app.querySelectorAll("[data-vis]").forEach(b=> b.onclick=()=>toggleSectionVis(b.dataset.vis, b.dataset.on==="1"));
       wireDnd();
     }
