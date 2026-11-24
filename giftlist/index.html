@@ -100,6 +100,8 @@
   .mini{font-family:inherit;font-size:.75rem;font-weight:600;color:var(--soft);background:none;border:1px solid var(--line);border-radius:7px;padding:4px 9px;cursor:pointer}
   .mini:hover{color:var(--ink)}
   .taken-chip{background:var(--soft);color:var(--card)}
+  .hiddenbadge{font-size:.64rem;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--card);background:var(--soft);border-radius:5px;padding:2px 6px;margin-left:6px;vertical-align:middle}
+  .card.ishidden{opacity:.6}
 
   .btn{font-family:inherit;font-weight:600;font-size:.92rem;background:var(--claret);color:var(--btn-ink);border:none;border-radius:10px;padding:11px 18px;cursor:pointer}
   .btn:hover{background:var(--claret-deep)}
@@ -508,7 +510,7 @@
     // build section blocks (claimed / taken items stay in place, greyed)
     const visibleSections = sections.filter(s=> s.visible || isOwner);
     let secHTML = visibleSections.map((s,idx)=>{
-      const top = items.filter(i=> i.section_id===s.id && !i.parent_id && !i.archived)
+      const top = items.filter(i=> i.section_id===s.id && !i.parent_id && !i.archived && (!i.hidden || (isOwner && editing)))
                        .sort((a,b)=>a.position-b.position);
       const cards = top.map(i=> renderItem(i,0)).join("") || (editing?"":'<p class="muted" style="margin:4px 0 14px">—</p>');
       return `<div class="sec" data-sec="${s.id}">
@@ -517,6 +519,7 @@
           ${!s.visible?'<span class="hidden-tag">on hold</span>':''}
           <span class="ln"></span>
           ${editing?`<button class="iconbtn" data-vis="${s.id}" data-on="${s.visible?1:0}" title="Show/hide">${s.visible?'👁':'🚫'}</button>
+            <button class="iconbtn" data-secwarn="${s.id}" title="Section warning note" style="${s.warning?'color:#c8922e':''}">⚠</button>
             <button class="iconbtn" data-delsec="${s.id}" title="Delete section">🗑</button>`:""}
         </div>
         <div class="dropzone" data-zone="${s.id}">${cards}</div>
@@ -559,9 +562,11 @@
     const showClaims = (!isOwner) || state.revealed;
     const claim = showClaims ? claimFor(i.id) : null;
     const taken = i.taken || !!claim;
-    const ex = i.url?'<span class="ex">↗ shop</span>':'';
+    const ex = i.url?'<span class="ex">↗ link</span>':'';
     const titleHTML = i.url && !editing ? `<a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}${ex}</a>` : esc(i.title)+(i.url?ex:"");
-    const warnHTML = state.list.item_warning ? ` <span class="warn" title="${esc(state.list.item_warning)}">⚠</span>` : "";
+    const sec = state.sections.find(s=>s.id===i.section_id);
+    const warnMsgs = [sec&&sec.warning, state.list.item_warning].filter(Boolean);
+    const warnHTML = warnMsgs.length ? ` <span class="warn" title="${esc(warnMsgs.join(' — '))}">⚠</span>` : "";
     let status="";
     let actions="";
     if(editing){ actions=`<button class="get ghost" data-edititem="${i.id}">Edit</button>`; }
@@ -580,19 +585,24 @@
     } else if(!editing){
       actions=`<button class="get" data-claim="${i.id}">I'll get this</button>`;
     }
-    const kids = state.items.filter(c=>c.parent_id===i.id && !c.archived).sort((a,b)=>a.position-b.position);
+    const kids = state.items.filter(c=>c.parent_id===i.id && !c.archived && (!c.hidden || (isOwner && editing))).sort((a,b)=>a.position-b.position);
     const kidHTML = kids.length ? `<div class="subitems">${kids.map(c=>renderItem(c,depth+1)).join("")}</div>` : "";
-    const editControls = editing ? `<div class="itemedit"><button class="mini" data-subitem="${i.id}">＋ sub-item</button><button class="mini" data-arcitem="${i.id}">Archive</button></div>` : "";
-    const cardHTML = `<div class="card ${taken?'taken':''} ${depth>0?'subitem':''}" data-item="${i.id}">
+    const editControls = editing ? `<div class="itemedit"><button class="mini" data-subitem="${i.id}">＋ sub-item</button><button class="mini" data-hide="${i.id}" data-on="${i.hidden?1:0}">${i.hidden?'Show to guests':'Hide from guests'}</button><button class="mini" data-arcitem="${i.id}">Archive</button></div>` : "";
+    const cardHTML = `<div class="card ${taken?'taken':''} ${i.hidden?'ishidden':''} ${depth>0?'subitem':''}" data-item="${i.id}">
       ${editing&&depth===0?'<span class="grip" title="Drag to reorder">⋮⋮</span>':''}
       <div class="price">${coinsHTML(i.coins||0)}</div>
-      <div class="b"><div class="ti">${titleHTML}${warnHTML}</div>${i.note?`<div class="nt">${esc(i.note)}</div>`:""}${status}${editControls}</div>
+      <div class="b"><div class="ti">${titleHTML}${warnHTML}${i.hidden?' <span class="hiddenbadge">hidden</span>':''}</div>${i.note?`<div class="nt">${esc(i.note)}</div>`:""}${status}${editControls}</div>
       <div class="actions">${actions}</div>
     </div>`;
     if(depth===0) return `<div class="itemwrap" data-item="${i.id}" ${editing?'draggable="true"':''}>${cardHTML}${kidHTML}</div>`;
     return cardHTML + kidHTML;
   }
   async function archiveItem(id, on){ await sb.from("items").update({archived:on}).eq("id", id); reloadItems(); }
+  async function toggleHidden(id, on){
+    const it=state.items.find(i=>i.id===id); if(it) it.hidden=!on;   // optimistic
+    drawList();
+    sb.from("items").update({hidden:!on}).eq("id", id);
+  }
 
   // ---------- wiring for the list view ----------
   function wireList(){
@@ -617,9 +627,11 @@
       app.querySelectorAll("[data-additem]").forEach(b=> b.onclick=()=>itemModal(null, b.dataset.additem));
       app.querySelectorAll("[data-edititem]").forEach(b=> b.onclick=()=>itemModal(b.dataset.edititem));
       app.querySelectorAll("[data-subitem]").forEach(b=> b.onclick=()=>itemModal(null, null, b.dataset.subitem));
+      app.querySelectorAll("[data-hide]").forEach(b=> b.onclick=()=>toggleHidden(b.dataset.hide, b.dataset.on==="1"));
       app.querySelectorAll("[data-arcitem]").forEach(b=> b.onclick=()=>archiveItem(b.dataset.arcitem, true));
       app.querySelectorAll("[data-unarc]").forEach(b=> b.onclick=()=>archiveItem(b.dataset.unarc, false));
       app.querySelectorAll("[data-delsec]").forEach(b=> b.onclick=()=>delSection(b.dataset.delsec));
+      app.querySelectorAll("[data-secwarn]").forEach(b=> b.onclick=()=>sectionWarnModal(b.dataset.secwarn));
       app.querySelectorAll("[data-vis]").forEach(b=> b.onclick=()=>toggleSectionVis(b.dataset.vis, b.dataset.on==="1"));
       wireDnd();
     }
@@ -693,6 +705,7 @@
       ${isSub?"":`<label>Section</label><select id="s">${secOpts}</select>`}
       <label style="display:flex;align-items:center;gap:8px;margin-top:14px"><input type="checkbox" id="tk" style="width:auto" ${it&&it.taken?"checked":""}/> Mark as already taken (greyed for everyone)</label>
       <input id="tn" placeholder="taken note, e.g. 'Dad's getting this'" value="${esc(it&&it.taken_note?it.taken_note:"")}"/>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:10px"><input type="checkbox" id="hd" style="width:auto" ${it&&it.hidden?"checked":""}/> Hide from guests (still visible to you)</label>
       <div class="err" id="er"></div>
       <div class="row"><button class="btn" id="go">${it?"Save":"Add"}</button>
       ${it?`<button class="btn ghost" id="arc">${it.archived?"Restore":"Archive"}</button><button class="btn ghost" id="del">Delete</button>`:''}</div>
@@ -702,7 +715,7 @@
         const sec = isSub ? defSec : m.querySelector("#s").value;
         const payload={ title, url:m.querySelector("#u").value.trim()||null, note:m.querySelector("#n").value.trim()||null,
           coins:m.querySelector("#c").value?parseInt(m.querySelector("#c").value):null, section_id:sec,
-          taken:m.querySelector("#tk").checked, taken_note:m.querySelector("#tn").value.trim()||null };
+          taken:m.querySelector("#tk").checked, taken_note:m.querySelector("#tn").value.trim()||null, hidden:m.querySelector("#hd").checked };
         if(it){ await sb.from("items").update(payload).eq("id", it.id); }
         else { const pos=state.items.filter(i=> parentId ? i.parent_id===parentId : (i.section_id===sec && !i.parent_id)).length;
                await sb.from("items").insert({...payload, list_id:state.list.id, parent_id:parentId||null, position:pos}); }
@@ -732,6 +745,16 @@
   async function toggleSectionVis(id, on){
     await sb.from("sections").update({visible:!on}).eq("id", id);
     const s=state.sections.find(x=>x.id===id); if(s) s.visible=!on; drawList();
+  }
+  function sectionWarnModal(secId){
+    const s=state.sections.find(x=>x.id===secId); if(!s) return;
+    modal(`<h3>Section warning</h3>
+      <p class="muted" style="font-size:.9rem">Puts a ⚠ on every item in “${esc(s.title)}”, with this note on hover. Leave blank to remove.</p>
+      <label>Note</label><input id="w" value="${esc(s.warning||"")}" placeholder="e.g. Hold off on these for now"/>
+      <button class="btn wide" id="go">Save</button>`, m=>{
+      m.querySelector("#go").onclick=async()=>{ const v=m.querySelector("#w").value.trim()||null;
+        await sb.from("sections").update({warning:v}).eq("id", secId); s.warning=v; closeModal(); drawList(); toast("Saved."); };
+    });
   }
 
   // ---------- tiers ----------
@@ -772,9 +795,9 @@
       <p class="muted" style="font-size:.82rem">A light gate for casual snooping — not bank-grade. Clear it to remove.</p>
       <button class="btn sm" id="savepw">Save password</button>
       <hr style="border:none;border-top:1px solid var(--line);margin:16px 0"/>
-      <label>Warning note on every item (optional)</label>
+      <label>Warning note on every item — whole list (optional)</label>
       <input id="warn" value="${esc(l.item_warning||"")}" placeholder="e.g. please check sizes with me first"/>
-      <p class="muted" style="font-size:.82rem">Shows a ⚠ beside each item; the note appears on hover.</p>
+      <p class="muted" style="font-size:.82rem">⚠ on every item across the list. For just one section, use the ⚠ on that section's header while editing.</p>
       <button class="btn sm" id="savewarn">Save note</button>
       <hr style="border:none;border-top:1px solid var(--line);margin:16px 0"/>
       <button class="btn ghost wide" id="arch">${l.is_archived?"Unarchive this list":"Archive this list"}</button>

@@ -55,6 +55,7 @@ create table if not exists public.sections (
   list_id  uuid not null references public.lists(id) on delete cascade,
   title    text not null,
   sub      text,
+  warning  text,                            -- optional ⚠ note on every item in this section
   visible  boolean not null default true,    -- hidden sections = "on hold", owner-only
   position int not null default 0
 );
@@ -73,6 +74,7 @@ create table if not exists public.items (
   archived   boolean not null default false,  -- owner moved it to the Archived section
   taken      boolean not null default false,  -- owner marked it taken (visible to everyone)
   taken_note text,                            -- e.g. "Dad's getting this"
+  hidden     boolean not null default false,  -- hidden from guests, still visible to the owner
   created_at timestamptz not null default now()
 );
 
@@ -133,7 +135,10 @@ create policy p_sections_write on public.sections for all
 
 drop policy if exists p_items_read on public.items;
 drop policy if exists p_items_write on public.items;
-create policy p_items_read  on public.items for select using (true);
+create policy p_items_read  on public.items for select using (
+  not hidden
+  or exists (select 1 from public.lists l where l.id = items.list_id and l.owner_id = auth.uid())
+);  -- hidden items are owner-only
 create policy p_items_write on public.items for all
   using (exists (select 1 from public.lists l where l.id = items.list_id and l.owner_id = auth.uid()))
   with check (exists (select 1 from public.lists l where l.id = items.list_id and l.owner_id = auth.uid()));
