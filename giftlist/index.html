@@ -591,7 +591,7 @@
   function wireList(){
     const {list, isOwner, editing} = state;
     const byId = s=>app.querySelector(s);
-    if(byId("#editToggle")) byId("#editToggle").onclick=()=>{ state.editing=!state.editing; saveTitleIfNeeded(); drawList(); };
+    if(byId("#editToggle")) byId("#editToggle").onclick=()=>{ saveTitleIfNeeded(); state.editing=!state.editing; drawList(); };
     if(byId("#share")) byId("#share").onclick=shareList;
     if(byId("#reveal")) byId("#reveal").onclick=doReveal;
     if(byId("#addSec")) byId("#addSec").onclick=addSection;
@@ -606,7 +606,7 @@
     if(editing){
       // title/subtitle save on blur
       ["editTitle","editSub"].forEach(id=>{ const el=byId("#"+id); if(el) el.onblur=saveTitleIfNeeded; });
-      app.querySelectorAll("[data-edit-sec]").forEach(h=> h.onblur=()=>{ const t=h.textContent.trim(); if(t) sb.from("sections").update({title:t}).eq("id",h.dataset.editSec).then(()=>{}); });
+      app.querySelectorAll("[data-edit-sec]").forEach(h=> h.onblur=()=>{ const t=h.textContent.trim(); if(t){ const s=state.sections.find(x=>x.id===h.dataset.editSec); if(s) s.title=t; sb.from("sections").update({title:t}).eq("id",h.dataset.editSec); } });
       app.querySelectorAll("[data-additem]").forEach(b=> b.onclick=()=>itemModal(null, b.dataset.additem));
       app.querySelectorAll("[data-edititem]").forEach(b=> b.onclick=()=>itemModal(b.dataset.edititem));
       app.querySelectorAll("[data-subitem]").forEach(b=> b.onclick=()=>itemModal(null, null, b.dataset.subitem));
@@ -618,14 +618,14 @@
     }
   }
 
-  async function saveTitleIfNeeded(){
+  function saveTitleIfNeeded(){
     const t=app.querySelector("#editTitle"), s=app.querySelector("#editSub");
     if(!t&&!s) return;
     const title=t?t.textContent.trim():state.list.title;
     let sub=s?s.textContent.trim():state.list.subtitle; if(sub==="add a subtitle…") sub="";
     if(title!==state.list.title || sub!==(state.list.subtitle||"")){
-      await sb.from("lists").update({title, subtitle:sub}).eq("id", state.list.id);
-      state.list.title=title; state.list.subtitle=sub;
+      state.list.title=title; state.list.subtitle=sub;                 // update now
+      sb.from("lists").update({title, subtitle:sub}).eq("id", state.list.id); // persist in background
     }
   }
 
@@ -644,22 +644,25 @@
       z.addEventListener("drop",e=>{ e.preventDefault(); if(dragId && !e.target.closest(".card")) moveItemToSection(dragId, z.dataset.zone); });
     });
   }
-  async function moveItem(dragId, targetId){
+  function moveItem(dragId, targetId){
     const items=state.items; const a=items.find(i=>i.id===dragId), b=items.find(i=>i.id===targetId);
     if(!a||!b) return;
     a.section_id=b.section_id;
     const inSec=items.filter(i=>i.section_id===b.section_id && i.id!==dragId);
     const bi=inSec.indexOf(b); inSec.splice(bi,0,a);
-    await persistOrder(b.section_id, inSec);
-    reloadItems();
+    inSec.forEach((it,k)=> it.position=k);
+    drawList();                         // instant feedback
+    persistOrder(b.section_id, inSec);  // save in the background
   }
-  async function moveItemToSection(dragId, secId){
+  function moveItemToSection(dragId, secId){
     const a=state.items.find(i=>i.id===dragId); if(!a) return; a.section_id=secId;
     const inSec=state.items.filter(i=>i.section_id===secId);
-    await persistOrder(secId, inSec); reloadItems();
+    inSec.forEach((it,k)=> it.position=k);
+    drawList();
+    persistOrder(secId, inSec);
   }
-  async function persistOrder(secId, ordered){
-    for(let k=0;k<ordered.length;k++){ await sb.from("items").update({section_id:secId, position:k}).eq("id", ordered[k].id); }
+  function persistOrder(secId, ordered){
+    return Promise.all(ordered.map((it,k)=> sb.from("items").update({section_id:secId, position:k}).eq("id", it.id)));
   }
   async function reloadItems(){
     const { data } = await sb.from("items").select("*").eq("list_id", state.list.id).order("position");
