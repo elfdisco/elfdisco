@@ -96,7 +96,11 @@
   .card .ti a .ex{text-decoration:none}
   .card .nt{color:var(--soft);font-size:.92rem;margin-top:3px}
   .card .ex{font-size:.8rem;color:var(--claret);margin-left:4px}
-  .itemwarn{display:inline-flex;align-items:center;gap:6px;margin-top:8px;font-size:.82rem;line-height:1.35;color:var(--gold);background:rgba(200,154,78,.15);border:1px solid rgba(200,154,78,.42);border-radius:8px;padding:4px 10px}
+  .itemwarn{display:inline-flex;align-items:center;gap:6px;margin:8px 6px 0 0;font-size:.82rem;line-height:1.35;border-radius:8px;padding:4px 10px;border:1px solid}
+  .itemwarn.amber{color:#b88a3f;background:rgba(200,154,78,.15);border-color:rgba(200,154,78,.42)}
+  .itemwarn.green{color:#4f9e6a;background:rgba(79,158,106,.15);border-color:rgba(79,158,106,.42)}
+  .itemwarn.blue{color:#5183bf;background:rgba(81,131,191,.15);border-color:rgba(81,131,191,.42)}
+  .itemwarn.red{color:#c05a4e;background:rgba(192,90,78,.15);border-color:rgba(192,90,78,.42)}
   .itemwarn svg{flex:0 0 auto}
   .card.taken{opacity:.72}
   .card.taken .ti{text-decoration:line-through;text-decoration-color:var(--soft)}
@@ -115,6 +119,55 @@
   .itemedit{margin-top:8px;display:flex;gap:8px}
   .mini{font-family:inherit;font-size:.75rem;font-weight:600;color:var(--soft);background:none;border:1px solid var(--line);border-radius:7px;padding:4px 9px;cursor:pointer}
   .mini:hover{color:var(--ink)}
+  /* owner shortcut icons under each item */
+  .iconrow{display:flex;flex-wrap:wrap;gap:4px;margin-top:9px}
+  .ib{position:relative;display:inline-flex;align-items:center;justify-content:center;width:30px;height:28px;border-radius:8px;border:1px solid var(--line);background:none;color:var(--soft);cursor:pointer;padding:0}
+  .ib:hover{color:var(--ink);border-color:var(--soft)}
+  .ib.on{color:var(--gold);border-color:rgba(200,154,78,.55)}
+  /* quick tooltips (title="" is slow and easy to miss) */
+  [data-tip]{position:relative}
+  [data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 7px);left:50%;transform:translateX(-50%);white-space:nowrap;background:var(--ink);color:var(--card);font:600 .72rem/1.2 Inter,system-ui,sans-serif;padding:5px 8px;border-radius:6px;pointer-events:none;z-index:40;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+  /* inline editing (owner, edit mode) */
+  .card .tt[contenteditable],.card .nt[contenteditable]{outline:none;border-radius:4px;cursor:text}
+  .card .tt[contenteditable]:hover,.card .nt[contenteditable]:hover{box-shadow:0 0 0 1px var(--line)}
+  .card .tt[contenteditable]:focus,.card .nt[contenteditable]:focus{box-shadow:0 0 0 2px var(--claret);background:var(--field)}
+  .card .nt[contenteditable]:empty::before{content:"add a note…";opacity:.4;font-style:italic}
+  .card .price.editable{cursor:pointer;border-radius:7px;padding:3px 4px;margin:-3px -4px}
+  .card .price.editable:hover{box-shadow:0 0 0 1px var(--line)}
+  /* small anchored menus (price, move to section) */
+  .popmenu{position:absolute;z-index:55;min-width:190px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.3)}
+  .popmenu .ph{font-size:.68rem;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:var(--soft);padding:6px 9px 4px}
+  .popmenu button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:none;border:none;border-radius:8px;padding:8px 9px;font:inherit;font-size:.9rem;color:var(--ink);cursor:pointer}
+  .popmenu button:hover{background:var(--field)}
+  .popmenu button.active{color:var(--claret);font-weight:600}
+  /* item picker (link with…) */
+  .picker{max-height:52vh;overflow:auto;border:1px solid var(--line);border-radius:10px;margin-top:8px}
+  .picker .pg{font-size:.68rem;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:var(--soft);padding:9px 12px 4px;background:var(--card);position:sticky;top:0}
+  .picker button{display:block;width:100%;text-align:left;background:none;border:none;border-top:1px solid var(--line);padding:9px 12px;font:inherit;font-size:.92rem;color:var(--ink);cursor:pointer}
+  .picker button:hover{background:var(--field)}
+  .picker button.cur{color:var(--claret);font-weight:600}
+  .picker button .d1{padding-left:18px;color:var(--soft)}
+  /* warnings editor */
+  .wrow{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .swatches{display:flex;gap:4px;flex:0 0 auto}
+  .sw{width:26px;height:26px;border-radius:7px;border:2px solid transparent;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
+  .sw.amber{background:rgba(200,154,78,.22);color:#b88a3f} .sw.green{background:rgba(79,158,106,.22);color:#4f9e6a}
+  .sw.blue{background:rgba(81,131,191,.22);color:#5183bf} .sw.red{background:rgba(192,90,78,.22);color:#c05a4e}
+  .sw.sel{border-color:currentColor}
+  .wrow input{flex:1;padding:8px 10px}
+  /* tidier item editor */
+  .modal.wide{max-width:540px}
+  .fgroup{border-top:1px solid var(--line);margin-top:16px;padding-top:4px}
+  .fgroup > .fh{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--gold);margin:10px 0 2px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .two label{margin-top:10px}
+  .check{display:flex;align-items:center;gap:9px;margin:12px 0 4px;font-size:.9rem;color:var(--ink);font-weight:500;cursor:pointer}
+  .check input{width:auto;margin:0}
+  /* archived items section */
+  .card.isarchived{opacity:.62}
+  .archtoggle{background:none;border:none;color:var(--soft);cursor:pointer;display:inline-flex;align-items:center;padding:2px;transition:transform .2s}
+  .archtoggle.collapsed{transform:rotate(-90deg)}
+  .archnote{font-size:.82rem;color:var(--soft);margin:-4px 0 12px}
   .taken-chip{background:var(--soft);color:var(--card)}
   .hiddenbadge{font-size:.64rem;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--card);background:var(--soft);border-radius:5px;padding:2px 6px;margin-left:6px;vertical-align:middle}
   .card.ishidden{opacity:.6}
@@ -155,11 +208,15 @@
   @media (max-width:560px){
     .wrap{padding:24px 14px 80px}
     h1.title{font-size:2.3rem}
-    .card{flex-wrap:wrap;align-items:center;justify-content:space-between;column-gap:12px;row-gap:9px;padding:13px 14px}
-    .card .b{order:0;flex:1 1 100%}
-    .card .grip{order:1}
-    .card .price{order:2;width:auto;flex:0 0 auto;padding-top:0}
-    .card .actions{order:3;flex:0 0 auto;flex-direction:row}
+    /* guests: text full width, then coins (left) + button (right) on one footer row */
+    .wrap:not(.editing) .card{flex-wrap:wrap;align-items:center;justify-content:space-between;column-gap:12px;row-gap:9px;padding:13px 14px}
+    .wrap:not(.editing) .card .b{order:0;flex:1 1 100%}
+    .wrap:not(.editing) .card .price{order:2;width:auto;flex:0 0 auto;padding-top:0}
+    .wrap:not(.editing) .card .actions{order:3;flex:0 0 auto;flex-direction:row}
+    /* owner editing: no claim button, so keep the coins column and save the extra row */
+    .wrap.editing .card{gap:10px;padding:13px 12px 13px 14px}
+    .wrap.editing .card .price{width:auto;min-width:30px}
+    .wrap.editing .card .actions:empty{display:none}
     .guide{flex-direction:column;align-items:flex-start;gap:8px;padding:12px 16px}
     .topbar{padding:10px 12px}
     .topbar .brand{font-size:.95rem}
@@ -196,10 +253,26 @@
   const $ = sel => document.querySelector(sel);
   const app = $("#app");
   const LOADING = '<div class="spin"><div class="spinner"></div><span>one moment…</span></div>';
+  // plain-text contenteditable where supported, so pasted formatting doesn't leak in
+  const CE = (()=>{ try{ const d=document.createElement("div"); d.contentEditable="plaintext-only"; return d.contentEditable==="plaintext-only"?"plaintext-only":"true"; }catch(_){ return "true"; } })();
   const esc = s => (s==null?"":String(s)).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const coinsHTML = n => n>0 ? '<span class="coins">'+Array.from({length:n}).map(()=>'<i class="coin"></i>').join('')+'</span>' : '<span style="color:var(--gold)">—</span>';
   const slugify = s => (s||"").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40) || "list";
   function toast(msg){ const t=document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2600); }
+  // Supabase queries are lazy: they only run once awaited/then'd. Every background save goes through here.
+  const save = (q, okMsg) => q.then(({error})=>{ if(error){ console.error(error); toast("Couldn't save: "+error.message); } else if(okMsg) toast(okMsg); });
+  const byPos = (a,b)=>a.position-b.position;
+  const WARN_STYLES = {
+    amber:{label:"Caution",   icon:"warn"},
+    green:{label:"Positive",  icon:"check"},
+    blue: {label:"Info",      icon:"info"},
+    red:  {label:"Important", icon:"alert"},
+  };
+  function warningHTML(w){
+    if(!w || !w.text) return "";
+    const st = WARN_STYLES[w.style] ? w.style : "amber";
+    return `<div class="itemwarn ${st}">${ICON[WARN_STYLES[st].icon]}<span>${esc(w.text)}</span></div>`;
+  }
 
   // ---------- inline SVG icons (emoji don't render reliably everywhere) ----------
   const _svg=(inner,o)=>{o=o||{};return `<svg width="${o.w||15}" height="${o.w||15}" viewBox="0 0 24 24" fill="${o.fill||'none'}" stroke="${o.sw===0?'none':'currentColor'}" stroke-width="${o.sw==null?2:o.sw}" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;};
@@ -211,6 +284,18 @@
     pencil:_svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',{w:13}),
     grip:_svg('<circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/>',{fill:'currentColor',sw:0,w:16}),
     contrast:_svg('<circle cx="12" cy="12" r="9"/><path d="M12 3v18a9 9 0 0 0 0-18z" fill="currentColor" stroke="none"/>',{w:16}),
+    check:_svg('<circle cx="12" cy="12" r="9"/><path d="M8.3 12.5l2.5 2.5 4.7-5.2"/>'),
+    info:_svg('<circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16.5"/><line x1="12" y1="7.5" x2="12" y2="7.51"/>'),
+    move:_svg('<polyline points="9 6 12 3 15 6"/><polyline points="9 18 12 21 15 18"/><polyline points="6 9 3 12 6 15"/><polyline points="18 9 21 12 18 15"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/>'),
+    link:_svg('<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>'),
+    plus:_svg('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'),
+    archive:_svg('<polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>'),
+    restore:_svg('<polyline points="1 4 1 10 7 10"/><path d="M3.5 15a9 9 0 1 0 2.1-9.4L1 10"/>'),
+    alert:_svg('<circle cx="12" cy="12" r="9"/><line x1="12" y1="7.5" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12" y2="16.51"/>'),
+    sub:_svg('<polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/>',{w:15}),
+    folder:_svg('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="12 11 15 14 12 17"/><line x1="8" y1="14" x2="15" y2="14"/>'),
+    chevron:_svg('<polyline points="6 9 12 15 18 9"/>',{w:16}),
+    x:_svg('<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>',{w:14}),
   };
 
   let session=null, profile=null, state={};
@@ -559,36 +644,44 @@
       const cards = buildUnits(top, editing) || (editing?"":'<p class="muted" style="margin:4px 0 14px">—</p>');
       return `<div class="sec" data-sec="${s.id}">
         <div class="sec-h"><span class="n">${String(idx+1).padStart(2,"0")}</span>
-          <h2 ${editing?'contenteditable data-edit-sec="'+s.id+'"':''}>${esc(s.title)}</h2>
+          <h2 ${editing?`contenteditable="${CE}" spellcheck="false" data-edit-sec="${s.id}"`:''}>${esc(s.title)}</h2>
           ${!s.visible?'<span class="hidden-tag">on hold</span>':''}
           <span class="ln"></span>
-          ${editing?`<button class="iconbtn" data-vis="${s.id}" data-on="${s.visible?1:0}" title="${s.visible?'Visible to guests — click to hide this section':'Hidden from guests — click to show'}">${s.visible?ICON.eye:ICON.eyeoff}</button>
-            <button class="iconbtn" data-secwarn="${s.id}" title="Section warning note" style="${s.warning?'color:var(--gold)':''}">${ICON.warn}</button>
-            <button class="iconbtn" data-delsec="${s.id}" title="Delete section">${ICON.trash}</button>`:""}
+          ${editing?`<button class="iconbtn" data-vis="${s.id}" data-on="${s.visible?1:0}" data-tip="${s.visible?'Visible to guests: click to hide section':'Hidden from guests: click to show'}">${s.visible?ICON.eye:ICON.eyeoff}</button>
+            <button class="iconbtn" data-secwarn="${s.id}" data-tip="${(s.warnings&&s.warnings.length)?'Edit section notes':'Add a note to every item here'}" style="${(s.warnings&&s.warnings.length)?'color:var(--gold);border-color:rgba(200,154,78,.55)':''}">${ICON.warn}</button>
+            <button class="iconbtn" data-delsec="${s.id}" data-tip="Delete section">${ICON.trash}</button>`:""}
         </div>
         <div class="dropzone" data-zone="${s.id}">${cards}</div>
         ${editing?`<button class="btn ghost sm" data-additem="${s.id}">+ Add item</button>`:""}
       </div>`;
     }).join("");
 
-    // archive compartment — owner moves things here manually
-    const archived = items.filter(i=> i.archived).sort((a,b)=>a.position-b.position);
+    // archive compartment: collapsible for everyone; owner can hide it from guests and edit items in it
+    const ownerEditing = isOwner && editing;
+    const archVisible = items.filter(i=> i.archived && (!i.hidden || ownerEditing));
     let archHTML="";
-    if(archived.length){
-      archHTML = `<div class="sec"><div class="sec-h"><h2>Archived</h2><span class="ln"></span></div>` +
-        archived.map(i=>`<div class="card taken subitem" data-item="${i.id}">
-          <div class="price">${coinsHTML(i.coins||0)}</div>
-          <div class="b"><div class="ti">${esc(i.title)}</div>${i.taken_note?`<div class="claimer">${esc(i.taken_note)}</div>`:""}</div>
-          ${isOwner&&editing?`<div class="actions"><button class="get ghost" data-unarc="${i.id}">Restore</button></div>`:""}
-        </div>`).join("") + `</div>`;
+    if(archVisible.length && (ownerEditing || list.show_archived)){
+      const collapsed = localStorage.getItem("elfdisco.giftlist.archc."+list.id)==="1";
+      const secIdx = id => { const k=sections.findIndex(s=>s.id===id); return k<0?999:k; };
+      archVisible.sort((a,b)=> secIdx(a.section_id)-secIdx(b.section_id) || a.position-b.position);
+      archHTML = `<div class="sec archsec">
+        <div class="sec-h">
+          <button class="archtoggle ${collapsed?'collapsed':''}" id="archToggle" aria-label="${collapsed?'Show':'Collapse'} archived items">${ICON.chevron}</button>
+          <h2>Archived</h2><span class="n">${archVisible.length}</span>
+          ${(ownerEditing && !list.show_archived)?'<span class="hidden-tag">hidden from guests</span>':''}
+          <span class="ln"></span>
+          ${ownerEditing?`<button class="iconbtn" id="archVis" data-tip="${list.show_archived?'Visible to guests: click to hide':'Hidden from guests: click to show'}">${list.show_archived?ICON.eye:ICON.eyeoff}</button>`:""}
+        </div>
+        ${collapsed?'':archVisible.map(i=>renderItem(i,0)).join("")}
+      </div>`;
     }
 
     const ownerNote = isOwner ? `<div class="notice">You're viewing <b>your own</b> list. Claims are hidden so your surprise is safe — use <b>Reveal claims</b> only if you really want to peek.</div>` : "";
     const hint = isOwner ? "" : `<div class="hint">Pick something and mark it so nobody doubles up — ${esc(owner.display_name)} can't see what's been taken, so the surprise stays safe.</div>`;
 
-    app.innerHTML = `<div class="wrap">
-      <h1 class="title" ${editing?'contenteditable id="editTitle"':''}>${esc(list.title)}</h1>
-      <div class="sub" ${editing?'contenteditable id="editSub"':''}>${esc(list.subtitle||(editing?"add a subtitle…":""))}</div>
+    app.innerHTML = `<div class="wrap${editing?' editing':''}">
+      <h1 class="title" ${editing?`contenteditable="${CE}" spellcheck="false" id="editTitle"`:''}>${esc(list.title)}</h1>
+      <div class="sub" ${editing?`contenteditable="${CE}" spellcheck="false" id="editSub"`:''}>${esc(list.subtitle||(editing?"add a subtitle…":""))}</div>
       <div class="rule"></div>
       ${list.is_archived?`<div class="notice center">This list is <b>archived</b>. Guests who open its link are sent to your other live lists. Unarchive it in Settings to make it live again.</div>`:""}
       ${bar}
@@ -613,8 +706,8 @@
       if(u.type==='item' || u.items.length<2) return u.items.map(m=>renderItem(m,0)).join("");
       const members=u.items.slice().sort((a,b)=>a.position-b.position);
       const label=(members.find(x=>x.link_label)||{}).link_label || 'Linked';
-      return `<div class="group" data-group="${u.key}" ${editing?'draggable="true"':''}>
-        <div class="grouphead">${editing?'<span class="grip" title="Drag the whole group">'+ICON.grip+'</span>':''}<span class="grouplabel ${editing?'editable':''}" ${editing?`data-grouplabel="${u.key}" title="Rename group"`:''}>${esc(label)}${editing?' '+ICON.pencil:''}</span></div>
+      return `<div class="group" data-group="${u.key}">
+        <div class="grouphead">${editing?'<span class="grip" data-tip="Drag the whole group">'+ICON.grip+'</span>':''}<span class="grouplabel ${editing?'editable':''}" ${editing?`data-grouplabel="${u.key}" data-tip="Rename group"`:''}>${esc(label)}${editing?' '+ICON.pencil:''}</span></div>
         <div class="groupzone" data-group="${u.key}">${members.map(m=>renderItem(m,0)).join("")}</div>
       </div>`;
     }).join("");
@@ -622,49 +715,74 @@
 
   function renderItem(i, depth){
     const editing=state.editing, isOwner=state.isOwner;
+    const ed = isOwner && editing;
     const showClaims = (!isOwner) || state.revealed;
     const claim = showClaims ? claimFor(i.id) : null;
     const taken = i.taken || !!claim;
     const ex = i.url?'<span class="ex">↗ link</span>':'';
-    const titleHTML = i.url && !editing ? `<a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}${ex}</a>` : esc(i.title)+(i.url?ex:"");
+    const titleHTML = ed
+      ? `<span class="tt" contenteditable="${CE}" spellcheck="false" data-edtitle="${i.id}">${esc(i.title)}</span>${i.url?`<a class="ex" href="${esc(i.url)}" target="_blank" rel="noopener">↗ link</a>`:''}`
+      : (i.url ? `<a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}${ex}</a>` : esc(i.title));
+    const noteHTML = ed
+      ? `<div class="nt" contenteditable="${CE}" spellcheck="false" data-ednote="${i.id}">${esc(i.note||"")}</div>`
+      : (i.note?`<div class="nt">${esc(i.note)}</div>`:"");
     const sec = state.sections.find(s=>s.id===i.section_id);
-    const warnMsgs = [sec&&sec.warning, state.list.item_warning].filter(Boolean);
-    const warnLine = warnMsgs.length ? `<div class="itemwarn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12" y2="17.01"/></svg><span>${esc(warnMsgs.join(' · '))}</span></div>` : "";
+    const warns=[];
+    if(state.list.item_warning) warns.push({style:'amber',text:state.list.item_warning});
+    if(sec && Array.isArray(sec.warnings)) warns.push(...sec.warnings);
+    if(Array.isArray(i.warnings)) warns.push(...i.warnings);
+    const warnLine = warns.map(warningHTML).join("");
     let status="";
     let actions="";
-    if(editing){ actions=`<button class="get ghost" data-edititem="${i.id}">Edit</button>`; }
     if(claim){
       const mine = claim.claimer_token===me;
       const label = claim.kind==='bought' ? 'Already bought' : 'Spoken for';
       const chipCls = claim.kind==='bought' ? 'chip' : 'chip taken-chip';
       const who = (isOwner && state.revealed) ? ' by '+esc(claim.claimer_name) : '';  // names only when owner peeks
       status = `<div class="claimer"><span class="${chipCls}">${label}</span>${who}${mine?' · you claimed this':''}</div>`;
-      if(!editing){
+      if(!ed){
         if(mine) actions=`<button class="get ghost" data-release="${i.id}">Release</button>`;
         else actions=`<button class="mini" data-manage="${i.id}">I claimed this</button>`;
       }
     } else if(i.taken){
       status=`<div class="claimer"><span class="chip taken-chip">taken</span>${i.taken_note?' '+esc(i.taken_note):''}</div>`;
-    } else if(!editing){
+    } else if(!ed && !i.archived){
       actions=`<button class="get" data-claim="${i.id}">Get this</button>`;
     }
-    const kids = state.items.filter(c=>c.parent_id===i.id && !c.archived && (!c.hidden || (isOwner && editing))).sort((a,b)=>a.position-b.position);
+    const kids = state.items.filter(c=>c.parent_id===i.id && !c.archived && (!c.hidden || ed)).sort(byPos);
     const kidHTML = kids.length ? `<div class="subitems">${kids.map(c=>renderItem(c,depth+1)).join("")}</div>` : "";
-    const editControls = editing ? `<div class="itemedit"><button class="mini" data-subitem="${i.id}">+ sub-item</button><button class="mini" data-hide="${i.id}" data-on="${i.hidden?1:0}">${i.hidden?'Show to guests':'Hide from guests'}</button><button class="mini" data-arcitem="${i.id}">Archive</button></div>` : "";
-    const cardHTML = `<div class="card ${taken?'taken':''} ${i.hidden?'ishidden':''} ${depth>0?'subitem':''}" data-item="${i.id}">
-      ${editing&&depth===0?'<span class="grip" title="Drag to reorder">'+ICON.grip+'</span>':''}
-      <div class="price">${coinsHTML(i.coins||0)}</div>
-      <div class="b"><div class="ti">${titleHTML}${i.hidden?' <span class="hiddenbadge">hidden</span>':''}</div>${i.note?`<div class="nt">${esc(i.note)}</div>`:""}${warnLine}${status}${editControls}</div>
+    const hasNotes = Array.isArray(i.warnings) && i.warnings.length>0;
+    const iconRow = !ed ? "" : `<div class="iconrow">
+      <button class="ib" data-edititem="${i.id}" data-tip="All details">${ICON.pencil}</button>
+      ${i.archived?"":`<button class="ib" data-subitem="${i.id}" data-tip="Add a sub-item">${ICON.sub}</button>
+      ${depth===0?`<button class="ib ${i.link_group?'on':''}" data-linkitem="${i.id}" data-tip="${i.link_group?'Linked: change or unlink':'Link with another item'}">${ICON.link}</button>`:""}
+      <button class="ib" data-moveitem="${i.id}" data-tip="Move to another section">${ICON.folder}</button>`}
+      <button class="ib ${hasNotes?'on':''}" data-itemnotes="${i.id}" data-tip="${hasNotes?'Edit notes on this item':'Add a note just for this item'}">${ICON.warn}</button>
+      <button class="ib ${i.hidden?'on':''}" data-hide="${i.id}" data-on="${i.hidden?1:0}" data-tip="${i.hidden?'Hidden from guests: click to show':'Hide from guests'}">${i.hidden?ICON.eyeoff:ICON.eye}</button>
+      ${i.archived
+        ? `<button class="ib" data-unarc="${i.id}" data-tip="Restore to the list">${ICON.restore}</button>`
+        : `<button class="ib" data-arcitem="${i.id}" data-tip="Move to Archived">${ICON.archive}</button>`}
+    </div>`;
+    const priceAttr = ed ? ` editable" data-price="${i.id}" data-tip="Change price` : '';
+    const cardHTML = `<div class="card ${taken?'taken':''} ${i.hidden?'ishidden':''} ${i.archived?'isarchived':''} ${depth>0?'subitem':''}" data-item="${i.id}">
+      ${ed&&depth===0&&!i.archived?'<span class="grip" data-tip="Drag to reorder">'+ICON.grip+'</span>':''}
+      <div class="price${priceAttr}">${coinsHTML(i.coins||0)}</div>
+      <div class="b"><div class="ti">${titleHTML}${i.hidden?' <span class="hiddenbadge">hidden</span>':''}</div>${noteHTML}${warnLine}${status}${iconRow}</div>
       <div class="actions">${actions}</div>
     </div>`;
-    if(depth===0) return `<div class="itemwrap" data-item="${i.id}" ${editing?'draggable="true"':''}>${cardHTML}${kidHTML}</div>`;
+    if(depth===0 && !i.archived) return `<div class="itemwrap" data-item="${i.id}">${cardHTML}${kidHTML}</div>`;
     return cardHTML + kidHTML;
   }
-  async function archiveItem(id, on){ await sb.from("items").update({archived:on}).eq("id", id); reloadItems(); }
+  async function archiveItem(id, on){
+    const it=state.items.find(i=>i.id===id); if(!it) return;
+    const patch = on ? {archived:true, link_group:null, link_label:null} : {archived:false};  // archiving pulls it out of any linked group
+    Object.assign(it, patch); drawList();
+    await save(sb.from("items").update(patch).eq("id", id), on?"Moved to Archived":"Restored");
+  }
   async function toggleHidden(id, on){
     const it=state.items.find(i=>i.id===id); if(it) it.hidden=!on;   // optimistic
     drawList();
-    sb.from("items").update({hidden:!on}).eq("id", id);
+    await save(sb.from("items").update({hidden:!on}).eq("id", id));
   }
 
   // ---------- wiring for the list view ----------
@@ -682,11 +800,34 @@
     app.querySelectorAll("[data-claim]").forEach(b=> b.onclick=()=>claimModal(b.dataset.claim));
     app.querySelectorAll("[data-release]").forEach(b=> b.onclick=()=>releaseItem(b.dataset.release));
     app.querySelectorAll("[data-manage]").forEach(b=> b.onclick=()=>manageClaimModal(b.dataset.manage));
+    // archived section: collapse (everyone, remembered per browser) + guest visibility (owner)
+    if(byId("#archToggle")) byId("#archToggle").onclick=()=>{
+      const k="elfdisco.giftlist.archc."+list.id; localStorage.setItem(k, localStorage.getItem(k)==="1"?"0":"1"); drawList(); };
+    if(byId("#archVis")) byId("#archVis").onclick=async()=>{
+      list.show_archived=!list.show_archived; drawList();
+      await save(sb.from("lists").update({show_archived:list.show_archived}).eq("id", list.id)); };
 
     if(editing){
+      // single-line inline fields: Enter commits
+      app.querySelectorAll("[contenteditable]").forEach(el=> el.addEventListener("keydown",e=>{
+        if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); el.blur(); }
+        if(e.key==="Escape"){ e.stopPropagation(); el.blur(); } }));
+      // item title / note, edited in place
+      app.querySelectorAll("[data-edtitle]").forEach(el=> el.onblur=()=>{
+        const it=state.items.find(x=>x.id===el.dataset.edtitle); const v=el.textContent.trim();
+        if(!it) return; if(!v){ el.textContent=it.title; return; }
+        if(v!==it.title){ it.title=v; save(sb.from("items").update({title:v}).eq("id",it.id)); } });
+      app.querySelectorAll("[data-ednote]").forEach(el=> el.onblur=()=>{
+        const it=state.items.find(x=>x.id===el.dataset.ednote); if(!it) return;
+        const v=el.textContent.trim()||null; if(!v) el.textContent="";
+        if(v!==(it.note||null)){ it.note=v; save(sb.from("items").update({note:v}).eq("id",it.id)); } });
+      app.querySelectorAll("[data-price]").forEach(el=> el.onclick=e=>{ e.stopPropagation(); priceMenu(el.dataset.price, el); });
+      app.querySelectorAll("[data-moveitem]").forEach(b=> b.onclick=e=>{ e.stopPropagation(); moveMenu(b.dataset.moveitem, b); });
+      app.querySelectorAll("[data-linkitem]").forEach(b=> b.onclick=()=>linkModal(b.dataset.linkitem));
+      app.querySelectorAll("[data-itemnotes]").forEach(b=> b.onclick=()=>itemNotesModal(b.dataset.itemnotes));
       // title/subtitle save on blur
       ["editTitle","editSub"].forEach(id=>{ const el=byId("#"+id); if(el) el.onblur=saveTitleIfNeeded; });
-      app.querySelectorAll("[data-edit-sec]").forEach(h=> h.onblur=()=>{ const t=h.textContent.trim(); if(t){ const s=state.sections.find(x=>x.id===h.dataset.editSec); if(s) s.title=t; sb.from("sections").update({title:t}).eq("id",h.dataset.editSec); } });
+      app.querySelectorAll("[data-edit-sec]").forEach(h=> h.onblur=()=>{ const t=h.textContent.trim(); if(t){ const s=state.sections.find(x=>x.id===h.dataset.editSec); if(s && s.title!==t){ s.title=t; save(sb.from("sections").update({title:t}).eq("id",h.dataset.editSec)); } } });
       app.querySelectorAll("[data-additem]").forEach(b=> b.onclick=()=>itemModal(null, b.dataset.additem));
       app.querySelectorAll("[data-edititem]").forEach(b=> b.onclick=()=>itemModal(b.dataset.edititem));
       app.querySelectorAll("[data-subitem]").forEach(b=> b.onclick=()=>itemModal(null, null, b.dataset.subitem));
@@ -708,21 +849,25 @@
     let sub=s?s.textContent.trim():state.list.subtitle; if(sub==="add a subtitle…") sub="";
     if(title!==state.list.title || sub!==(state.list.subtitle||"")){
       state.list.title=title; state.list.subtitle=sub;                 // update now
-      sb.from("lists").update({title, subtitle:sub}).eq("id", state.list.id); // persist in background
+      save(sb.from("lists").update({title, subtitle:sub}).eq("id", state.list.id));
     }
   }
 
-  // ---------- drag & drop (desktop) ----------
   // ---------- drag & drop: live reorder (desktop) ----------
+  // Only the grip makes a card draggable, so text inside cards can still be selected and edited.
   let dragKind=null, dragEl=null;
   function wireDnd(){
-    app.querySelectorAll('.itemwrap[draggable="true"]').forEach(w=>{
-      w.addEventListener("dragstart",e=>{ e.stopPropagation(); dragKind = w.closest('.groupzone')?'member':'unit'; dragEl=w; w.classList.add("dragging"); e.dataTransfer.effectAllowed="move"; try{e.dataTransfer.setData("text/plain",w.dataset.item);}catch(_){} });
-      w.addEventListener("dragend",()=>{ w.classList.remove("dragging"); dragKind=null; dragEl=null; commitOrder(); });
+    app.querySelectorAll(".grip").forEach(g=> g.addEventListener("pointerdown",()=>{
+      const host=g.closest(".itemwrap, .group"); if(host) host.setAttribute("draggable","true"); }));
+    const undrag=()=> app.querySelectorAll('[draggable="true"]').forEach(x=>x.removeAttribute("draggable"));
+    if(!wireDnd.bound){ document.addEventListener("pointerup", ()=>{ if(!dragEl) undrag(); }); wireDnd.bound=true; }
+    app.querySelectorAll('.itemwrap').forEach(w=>{
+      w.addEventListener("dragstart",e=>{ if(w.getAttribute("draggable")!=="true") return; e.stopPropagation(); dragKind = w.closest('.groupzone')?'member':'unit'; dragEl=w; w.classList.add("dragging"); e.dataTransfer.effectAllowed="move"; try{e.dataTransfer.setData("text/plain",w.dataset.item);}catch(_){} });
+      w.addEventListener("dragend",()=>{ w.classList.remove("dragging"); dragKind=null; dragEl=null; undrag(); commitOrder(); });
     });
-    app.querySelectorAll('.group[draggable="true"]').forEach(g=>{
-      g.addEventListener("dragstart",e=>{ dragKind='unit'; dragEl=g; g.classList.add("dragging"); e.dataTransfer.effectAllowed="move"; });
-      g.addEventListener("dragend",()=>{ g.classList.remove("dragging"); dragKind=null; dragEl=null; commitOrder(); });
+    app.querySelectorAll('.group').forEach(g=>{
+      g.addEventListener("dragstart",e=>{ if(g.getAttribute("draggable")!=="true") return; dragKind='unit'; dragEl=g; g.classList.add("dragging"); e.dataTransfer.effectAllowed="move"; });
+      g.addEventListener("dragend",()=>{ g.classList.remove("dragging"); dragKind=null; dragEl=null; undrag(); commitOrder(); });
     });
     app.querySelectorAll(".dropzone").forEach(zone=>{
       zone.addEventListener("dragover",e=>{
@@ -758,68 +903,219 @@
       });
     });
     if(ups.length) Promise.all(ups.map(it=> sb.from("items").update({section_id:it.section_id, position:it.position}).eq("id", it.id)));
+    // sub-items follow their parent into a new section
+    const kidUps=[];
+    ups.forEach(p=> state.items.filter(c=>c.parent_id===p.id && c.section_id!==p.section_id).forEach(c=>{ c.section_id=p.section_id; kidUps.push(c); }));
+    if(kidUps.length) Promise.all(kidUps.map(c=> sb.from("items").update({section_id:c.section_id}).eq("id", c.id)));
   }
   async function reloadItems(){
     const { data } = await sb.from("items").select("*").eq("list_id", state.list.id).order("position");
     state.items=data||[]; drawList();
   }
 
-  // ---------- item add / edit modal ----------
+  // ---------- items in the same order as the page, grouped by section ----------
+  function orderedItems(){
+    const out=[];
+    const walk=(it,d,sec)=>{ out.push({it,d,sec}); state.items.filter(c=>c.parent_id===it.id && !c.archived).sort(byPos).forEach(c=>walk(c,d+1,sec)); };
+    state.sections.slice().sort(byPos).forEach(sec=>{
+      const top=state.items.filter(i=>i.section_id===sec.id && !i.parent_id && !i.archived).sort(byPos);
+      const seen={}, units=[];
+      top.forEach(it=>{ if(it.link_group){ if(!seen[it.link_group]){ seen[it.link_group]={pos:Infinity,items:[]}; units.push(seen[it.link_group]); }
+                          const g=seen[it.link_group]; g.items.push(it); g.pos=Math.min(g.pos,it.position); }
+                        else units.push({pos:it.position,items:[it]}); });
+      units.sort((a,b)=>a.pos-b.pos).forEach(u=>u.items.forEach(it=>walk(it,0,sec)));
+    });
+    return out;
+  }
+  // <select> options with one <optgroup> per section; filter decides which items are offered
+  function itemOptions(selectedId, filter, noneLabel){
+    let html=`<option value="">${esc(noneLabel)}</option>`, cur=null;
+    orderedItems().forEach(({it,d,sec})=>{
+      if(!filter(it,d)) return;
+      if(cur!==sec.id){ if(cur!==null) html+='</optgroup>'; html+=`<optgroup label="${esc(sec.title)}">`; cur=sec.id; }
+      html+=`<option value="${it.id}" ${it.id===selectedId?"selected":""}>${d?"\u00a0\u00a0\u00a0↳ ":""}${esc(it.title)}</option>`;
+    });
+    return html + (cur!==null?'</optgroup>':'');
+  }
+
+  // ---------- coloured notes editor (used for sections and single items) ----------
+  function warningsEditorHTML(list){
+    const rows=(list&&list.length?list:[]).map(w=>warnRowHTML(w)).join("");
+    return `<div class="wlist">${rows}</div><button type="button" class="btn ghost sm" data-addwarn>+ Add a note</button>`;
+  }
+  function warnRowHTML(w){
+    w=w||{style:"amber",text:""};
+    const sw=Object.keys(WARN_STYLES).map(k=>`<button type="button" class="sw ${k} ${w.style===k?'sel':''}" data-sw="${k}" data-tip="${WARN_STYLES[k].label}">${ICON[WARN_STYLES[k].icon]}</button>`).join("");
+    return `<div class="wrow" data-style="${WARN_STYLES[w.style]?w.style:'amber'}"><div class="swatches">${sw}</div><input value="${esc(w.text||"")}" placeholder="e.g. Great choice, I'd love this"/><button type="button" class="ib" data-delwarn data-tip="Remove">${ICON.x}</button></div>`;
+  }
+  function wireWarningsEditor(root){
+    const bindRow=row=>{
+      row.querySelectorAll("[data-sw]").forEach(b=> b.onclick=()=>{ row.dataset.style=b.dataset.sw; row.querySelectorAll(".sw").forEach(x=>x.classList.toggle("sel", x===b)); });
+      row.querySelector("[data-delwarn]").onclick=()=>row.remove();
+    };
+    root.querySelectorAll(".wrow").forEach(bindRow);
+    root.querySelector("[data-addwarn]").onclick=()=>{ const t=document.createElement("div"); t.innerHTML=warnRowHTML(); const row=t.firstElementChild;
+      root.querySelector(".wlist").appendChild(row); bindRow(row); row.querySelector("input").focus(); };
+  }
+  const readWarnings = root => [...root.querySelectorAll(".wrow")].map(r=>({style:r.dataset.style, text:r.querySelector("input").value.trim()})).filter(w=>w.text);
+
+  // ---------- small anchored menus ----------
+  function closePop(){ const p=document.getElementById("popmenu"); if(p) p.remove(); }
+  function popMenu(anchor, title, options){
+    closePop();
+    const m=document.createElement("div"); m.className="popmenu"; m.id="popmenu";
+    m.innerHTML=`<div class="ph">${esc(title)}</div>`+options.map((o,k)=>`<button data-k="${k}" class="${o.active?'active':''}">${o.html}</button>`).join("");
+    document.body.appendChild(m);
+    const r=anchor.getBoundingClientRect();
+    const left=Math.min(window.scrollX+r.left, window.scrollX+document.documentElement.clientWidth-m.offsetWidth-10);
+    m.style.left=Math.max(10,left)+"px"; m.style.top=(window.scrollY+r.bottom+6)+"px";
+    m.querySelectorAll("button").forEach(b=> b.onclick=()=>{ closePop(); options[+b.dataset.k].pick(); });
+    setTimeout(()=> document.addEventListener("click", function off(e){ if(!m.contains(e.target)){ closePop(); document.removeEventListener("click", off); } }), 0);
+  }
+  function priceMenu(itemId, anchor){
+    const it=state.items.find(x=>x.id===itemId); if(!it) return;
+    const setCoins=async c=>{ it.coins=c; drawList(); await save(sb.from("items").update({coins:c}).eq("id",it.id)); };
+    popMenu(anchor, "Price", [
+      ...state.tiers.slice().sort(byPos).map(t=>({ html:`${coinsHTML(t.coins)}<span>${esc(t.hint)}</span>`, active:it.coins===t.coins, pick:()=>setCoins(t.coins) })),
+      { html:`<span style="color:var(--gold);width:17px;text-align:center">—</span><span>Not sure / returnable</span>`, active:!it.coins, pick:()=>setCoins(null) },
+    ]);
+  }
+  function moveMenu(itemId, anchor){
+    const it=state.items.find(x=>x.id===itemId); if(!it) return;
+    popMenu(anchor, "Move to section", state.sections.slice().sort(byPos).map(s=>({
+      html:esc(s.title)+(s.id===it.section_id?' <span class="muted" style="margin-left:auto;font-size:.78rem">here</span>':''),
+      active:s.id===it.section_id,
+      pick:()=>moveToSection(it, s.id),
+    })));
+  }
+  async function moveToSection(it, secId){
+    if(it.section_id===secId) return;
+    const wasLinked=!!it.link_group;
+    const pos=state.items.filter(i=>i.section_id===secId && !i.parent_id && !i.archived).length;
+    const patch={section_id:secId, parent_id:null, link_group:null, link_label:null, position:pos};   // lands at the bottom, on its own
+    Object.assign(it, patch);
+    const kids=state.items.filter(c=>c.parent_id===it.id); kids.forEach(c=>c.section_id=secId);
+    drawList();
+    await Promise.all([ save(sb.from("items").update(patch).eq("id",it.id)), ...kids.map(c=>save(sb.from("items").update({section_id:secId}).eq("id",c.id))) ]);
+    toast(wasLinked?"Moved (and unlinked from its group)":"Moved");
+  }
+
+  // ---------- link with another item ----------
+  function linkModal(itemId){
+    const it=state.items.find(x=>x.id===itemId); if(!it) return;
+    const linked=it.link_group ? state.items.filter(x=>x.link_group===it.link_group && x.id!==it.id) : [];
+    let rows="", cur=null;
+    orderedItems().forEach(({it:o,d,sec})=>{
+      if(o.id===it.id || d>0) return;
+      if(cur!==sec.id){ rows+=`<div class="pg">${esc(sec.title)}</div>`; cur=sec.id; }
+      const isCur = it.link_group && o.link_group===it.link_group;
+      rows+=`<button data-pick="${o.id}" class="${isCur?'cur':''}">${esc(o.title)}${isCur?' ✓':''}</button>`;
+    });
+    modal(`<h3>Link “${esc(it.title)}”</h3>
+      <p class="muted" style="font-size:.88rem;margin:0">Linked items sit together in a group you can drag around as one. Each stays separately claimable.</p>
+      ${linked.length?`<p style="font-size:.88rem;margin:12px 0 0">Currently linked with: <b>${linked.map(x=>esc(x.title)).join(", ")}</b></p>
+        <button class="btn ghost sm" id="unlink" style="margin-top:8px">Unlink this item</button>`:""}
+      <label>Link with…</label><div class="picker">${rows||'<p class="muted" style="padding:10px 12px">No other items yet.</p>'}</div>`, m=>{
+      m.querySelectorAll("[data-pick]").forEach(b=> b.onclick=async()=>{
+        const target=state.items.find(x=>x.id===b.dataset.pick); if(!target) return;
+        const grp=it.link_group||target.link_group||(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random());
+        const label=(state.items.find(x=>x.link_group===grp && x.link_label)||{}).link_label||null;
+        const pos=Math.min(it.position, target.section_id===it.section_id?target.position:it.position);
+        const patchA={link_group:grp, link_label:label, parent_id:null};
+        const patchB={link_group:grp, link_label:label, parent_id:null, section_id:it.section_id, position:pos};
+        Object.assign(it,patchA); Object.assign(target,patchB);
+        closeModal(); drawList();
+        await Promise.all([ save(sb.from("items").update(patchA).eq("id",it.id)), save(sb.from("items").update(patchB).eq("id",target.id)) ]);
+      });
+      const u=m.querySelector("#unlink");
+      if(u) u.onclick=async()=>{
+        const grp=it.link_group; Object.assign(it,{link_group:null, link_label:null});
+        const rest=state.items.filter(x=>x.link_group===grp);
+        const ops=[ save(sb.from("items").update({link_group:null, link_label:null}).eq("id",it.id)) ];
+        if(rest.length===1){ Object.assign(rest[0],{link_group:null, link_label:null}); ops.push(save(sb.from("items").update({link_group:null, link_label:null}).eq("id",rest[0].id))); }  // a group of one isn't a group
+        closeModal(); drawList(); await Promise.all(ops);
+      };
+    });
+  }
+
+  // ---------- notes on a single item ----------
+  function itemNotesModal(itemId){
+    const it=state.items.find(x=>x.id===itemId); if(!it) return;
+    modal(`<h3>Notes on “${esc(it.title)}”</h3>
+      <p class="muted" style="font-size:.88rem">Shown under this item only. Pick a colour for each: caution, positive, info or important.</p>
+      ${warningsEditorHTML(it.warnings)}
+      <button class="btn wide" id="go">Save</button>`, m=>{
+      m.classList.add("wide"); wireWarningsEditor(m);
+      m.querySelector("#go").onclick=async()=>{ const w=readWarnings(m); it.warnings=w; closeModal(); drawList();
+        await save(sb.from("items").update({warnings:w}).eq("id",it.id), "Saved"); };
+    });
+  }
+
+  // ---------- full item editor ----------
   function itemModal(itemId, sectionId, parentId){
     const it = itemId ? state.items.find(i=>i.id===itemId) : null;
-    const quickSub = !!(parentId && !it);          // adding a sub-item via the ＋ button
+    const quickSub = !!(parentId && !it);          // adding a sub-item via the sub-item button
     const curParent = it && it.parent_id ? it.parent_id : (parentId||"");
     const defSec = it ? it.section_id : (parentId ? (state.items.find(x=>x.id===parentId)||{}).section_id : sectionId);
-    const secOpts = state.sections.map(s=>`<option value="${s.id}" ${s.id===defSec?"selected":""}>${esc(s.title)}</option>`).join("");
-    const tierOpts = `<option value="">— / returnable</option>`+state.tiers.map(t=>`<option value="${t.coins}" ${it&&it.coins===t.coins?"selected":""}>${"●".repeat(t.coins)} ${esc(t.hint)}</option>`).join("");
-    const others = state.items.filter(x=> x.id!==(it&&it.id));
-    const parentOpts = `<option value="">— none (keep top-level)</option>`+others.filter(x=>!x.parent_id).map(x=>`<option value="${x.id}" ${curParent===x.id?"selected":""}>${esc(x.title)}</option>`).join("");
-    const curLink = it && it.link_group ? state.items.find(x=>x.link_group===it.link_group && x.id!==it.id) : null;
-    const linkOpts = `<option value="">— none</option>`+others.map(x=>`<option value="${x.id}" ${curLink&&curLink.id===x.id?"selected":""}>${esc(x.title)}</option>`).join("");
+    const secOpts = state.sections.slice().sort(byPos).map(s=>`<option value="${s.id}" ${s.id===defSec?"selected":""}>${esc(s.title)}</option>`).join("");
+    const tierOpts = state.tiers.slice().sort(byPos).map(t=>`<option value="${t.coins}" ${it&&it.coins===t.coins?"selected":""}>${"£".repeat(t.coins)}  ${esc(t.hint)}</option>`).join("")
+                   + `<option value="" ${it&&!it.coins?"selected":""}>Not sure / returnable</option>`;
+    const parentOpts = itemOptions(curParent, (o,d)=> d===0 && (!it || o.id!==it.id), "None (its own item)");
+    const parentTitle = quickSub ? (state.items.find(x=>x.id===parentId)||{}).title||"" : "";
     modal(`
-      <h3>${it?"Edit item":(quickSub?"Add sub-item":"Add item")}</h3>
-      ${quickSub?`<p class="muted" style="font-size:.85rem">Under: <b>${esc((state.items.find(x=>x.id===parentId)||{}).title||"")}</b></p>`:""}
-      <label>What is it?</label><input id="t" value="${esc(it?it.title:"")}"/>
-      <label>Link (optional)</label><input id="u" value="${esc(it&&it.url?it.url:"")}" placeholder="https://…"/>
-      <label>Note (optional — size, colour, why…)</label><textarea id="n">${esc(it&&it.note?it.note:"")}</textarea>
-      <label>Price</label><select id="c">${tierOpts}</select>
-      <label>Section</label><select id="s">${secOpts}</select>
-      ${quickSub?"":`<label>Make this a sub-item of (optional)</label><select id="par">${parentOpts}</select>
-      <label>Or link as “related to” another item (optional)</label><select id="lnk">${linkOpts}</select>`}
-      <label style="display:flex;align-items:center;gap:8px;margin-top:14px"><input type="checkbox" id="tk" style="width:auto" ${it&&it.taken?"checked":""}/> Mark as already taken (greyed for everyone)</label>
-      <input id="tn" placeholder="taken note, e.g. 'Dad's getting this'" value="${esc(it&&it.taken_note?it.taken_note:"")}"/>
-      <label style="display:flex;align-items:center;gap:8px;margin-top:10px"><input type="checkbox" id="hd" style="width:auto" ${it&&it.hidden?"checked":""}/> Hide from guests (still visible to you)</label>
+      <h3>${it?"Edit item":(quickSub?"Add a sub-item":"Add an item")}</h3>
+      ${quickSub?`<p class="muted" style="font-size:.88rem;margin:0">Under <b>${esc(parentTitle)}</b></p>`:""}
+      <label>What is it?</label><input id="t" value="${esc(it?it.title:"")}" placeholder="e.g. Merino polo jumper"/>
+      <label>Note</label><textarea id="n" placeholder="Size, colour, why you want it…">${esc(it&&it.note?it.note:"")}</textarea>
+      <div class="two">
+        <div><label>Price</label><select id="c">${tierOpts}</select></div>
+        <div><label>Link</label><input id="u" value="${esc(it&&it.url?it.url:"")}" placeholder="https://…"/></div>
+      </div>
+      ${quickSub?"":`<div class="fgroup"><div class="fh">Where it sits</div>
+        <div class="two">
+          <div><label>Section</label><select id="s">${secOpts}</select></div>
+          <div><label>Sub-item of</label><select id="par">${parentOpts}</select></div>
+        </div>
+        <p class="muted" style="font-size:.8rem;margin:6px 0 0">To link it with other items, use the link button under the item.</p>
+      </div>`}
+      <div class="fgroup"><div class="fh">Notes for guests</div>${warningsEditorHTML(it?it.warnings:[])}</div>
+      <div class="fgroup"><div class="fh">Status</div>
+        <label class="check"><input type="checkbox" id="hd" ${it&&it.hidden?"checked":""}/> Hide from guests (you'll still see it)</label>
+        <label class="check"><input type="checkbox" id="tk" ${it&&it.taken?"checked":""}/> Already taken (greyed out for everyone)</label>
+        <input id="tn" placeholder="Optional: e.g. Dad's getting this" value="${esc(it&&it.taken_note?it.taken_note:"")}" style="${it&&it.taken?'':'display:none'}"/>
+      </div>
       <div class="err" id="er"></div>
-      <div class="row"><button class="btn" id="go">${it?"Save":"Add"}</button>
-      ${it?`<button class="btn ghost" id="arc">${it.archived?"Restore":"Archive"}</button><button class="btn ghost" id="del">Delete</button>`:''}</div>
+      <div class="row" style="margin-top:16px"><button class="btn" id="go">${it?"Save":"Add"}</button>
+      ${it?`<button class="btn ghost" id="arc">${it.archived?"Restore":"Archive"}</button><button class="btn ghost" id="del" style="margin-left:auto">Delete</button>`:''}</div>
     `, m=>{
+      m.classList.add("wide");
+      wireWarningsEditor(m);
+      const tk=m.querySelector("#tk"), tn=m.querySelector("#tn");
+      tk.onchange=()=>{ tn.style.display=tk.checked?"":"none"; if(tk.checked) tn.focus(); };
+      m.querySelector("#t").focus();
       m.querySelector("#go").onclick=async()=>{
-        const title=m.querySelector("#t").value.trim(); if(!title){ m.querySelector("#er").textContent="Needs a name."; return; }
+        const title=m.querySelector("#t").value.trim(); if(!title){ m.querySelector("#er").textContent="Give it a name."; return; }
         const parVal = quickSub ? (parentId||null) : (m.querySelector("#par").value||null);
-        let sec = m.querySelector("#s").value;
-        if(parVal){ const p=state.items.find(x=>x.id===parVal); if(p) sec=p.section_id; }   // sub-item lives in parent's section
+        let sec = quickSub ? defSec : m.querySelector("#s").value;
+        if(parVal){ const p=state.items.find(x=>x.id===parVal); if(p) sec=p.section_id; }   // a sub-item lives in its parent's section
         const payload={ title, url:m.querySelector("#u").value.trim()||null, note:m.querySelector("#n").value.trim()||null,
           coins:m.querySelector("#c").value?parseInt(m.querySelector("#c").value):null, section_id:sec, parent_id:parVal,
-          taken:m.querySelector("#tk").checked, taken_note:m.querySelector("#tn").value.trim()||null, hidden:m.querySelector("#hd").checked };
-        let savedId;
-        if(it){ await sb.from("items").update(payload).eq("id", it.id); savedId=it.id; }
+          taken:tk.checked, taken_note:tk.checked?(tn.value.trim()||null):null, hidden:m.querySelector("#hd").checked,
+          warnings:readWarnings(m) };
+        if(it && (parVal!==it.parent_id || sec!==it.section_id) && it.link_group){ payload.link_group=null; payload.link_label=null; }  // leaving its group
+        let error;
+        if(it){ ({error}=await sb.from("items").update(payload).eq("id", it.id));
+                if(!error && sec!==it.section_id) await Promise.all(state.items.filter(c=>c.parent_id===it.id).map(c=>sb.from("items").update({section_id:sec}).eq("id",c.id))); }
         else { const pos=state.items.filter(i=> parVal ? i.parent_id===parVal : (i.section_id===sec && !i.parent_id)).length;
-               const { data }=await sb.from("items").insert({...payload, list_id:state.list.id, position:pos}).select().maybeSingle(); savedId=data&&data.id; }
-        if(!quickSub && savedId){   // peer-link handling
-          const linkVal=m.querySelector("#lnk").value;
-          if(linkVal && linkVal!==savedId){
-            const target=state.items.find(x=>x.id===linkVal);
-            const grp=(it&&it.link_group)||(target&&target.link_group)||(crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2));
-            await Promise.all([ sb.from("items").update({link_group:grp, parent_id:null}).eq("id",savedId), sb.from("items").update({link_group:grp, section_id:sec, parent_id:null}).eq("id",linkVal) ]);
-          } else if(it && it.link_group){ await sb.from("items").update({link_group:null}).eq("id",savedId); }
-        }
+               ({error}=await sb.from("items").insert({...payload, list_id:state.list.id, position:pos})); }
+        if(error){ m.querySelector("#er").textContent=error.message; return; }
         closeModal(); reloadItems();
       };
       if(it){
-        m.querySelector("#arc").onclick=async()=>{ await sb.from("items").update({archived:!it.archived}).eq("id", it.id); closeModal(); reloadItems(); };
+        m.querySelector("#arc").onclick=async()=>{ closeModal(); await archiveItem(it.id, !it.archived); };
         m.querySelector("#del").onclick=async()=>{ const hasKids=state.items.some(x=>x.parent_id===it.id);
-          if(!confirm("Delete this item"+(hasKids?" and its sub-items":"")+"?")) return;
-          await sb.from("items").delete().eq("id", it.id); closeModal(); reloadItems(); };
+          if(!confirm("Delete this item"+(hasKids?" and its sub-items":"")+"? This can't be undone.")) return;
+          await save(sb.from("items").delete().eq("id", it.id)); closeModal(); reloadItems(); };
       }
     });
   }
@@ -855,12 +1151,13 @@
   }
   function sectionWarnModal(secId){
     const s=state.sections.find(x=>x.id===secId); if(!s) return;
-    modal(`<h3>Section warning</h3>
-      <p class="muted" style="font-size:.9rem">Puts a warning marker on every item in “${esc(s.title)}”, with this note on hover. Leave blank to remove.</p>
-      <label>Note</label><input id="w" value="${esc(s.warning||"")}" placeholder="e.g. Hold off on these for now"/>
+    modal(`<h3>Notes on “${esc(s.title)}”</h3>
+      <p class="muted" style="font-size:.88rem">Shown under every item in this section. Add as many as you like and pick a colour for each: caution, positive, info or important.</p>
+      ${warningsEditorHTML(s.warnings)}
       <button class="btn wide" id="go">Save</button>`, m=>{
-      m.querySelector("#go").onclick=async()=>{ const v=m.querySelector("#w").value.trim()||null;
-        await sb.from("sections").update({warning:v}).eq("id", secId); s.warning=v; closeModal(); drawList(); toast("Saved."); };
+      m.classList.add("wide"); wireWarningsEditor(m);
+      m.querySelector("#go").onclick=async()=>{ const w=readWarnings(m); s.warnings=w; s.warning=null; closeModal(); drawList();
+        await save(sb.from("sections").update({warnings:w, warning:null}).eq("id", secId), "Saved"); };
     });
   }
 
@@ -904,7 +1201,7 @@
       <hr style="border:none;border-top:1px solid var(--line);margin:16px 0"/>
       <label>Warning note on every item — whole list (optional)</label>
       <input id="warn" value="${esc(l.item_warning||"")}" placeholder="e.g. please check sizes with me first"/>
-      <p class="muted" style="font-size:.82rem">A warning marker on every item across the list. For just one section, use the warning button on that section's header while editing.</p>
+      <p class="muted" style="font-size:.82rem">Shown under every item in the list. For one section, use the note button on that section's header; for one item, the note button under it.</p>
       <button class="btn sm" id="savewarn">Save note</button>
       <hr style="border:none;border-top:1px solid var(--line);margin:16px 0"/>
       <button class="btn ghost wide" id="arch">${l.is_archived?"Unarchive this list":"Archive this list"}</button>
@@ -1000,7 +1297,7 @@
     if(after) after(scrim.querySelector(".modal"));
   }
   function closeModal(){ const s=$("#scrim"); if(s) s.remove(); }
-  window.addEventListener("keydown",e=>{ if(e.key==="Escape") closeModal(); });
+  window.addEventListener("keydown",e=>{ if(e.key==="Escape"){ closeModal(); closePop(); } });
 
   // ===================================================================
   //  BOOT

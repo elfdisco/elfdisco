@@ -29,6 +29,7 @@ create table if not exists public.lists (
   theme_dark    text not null default 'ash',
   surprise_mode boolean not null default true,   -- owner can't see claims unless they reveal
   is_archived   boolean not null default false,
+  show_archived boolean not null default true,   -- show the "Archived" items section to guests
   item_warning  text,                          -- optional note shown as a ⚠ on every item (hover)
   created_at    timestamptz not null default now(),
   unique (owner_id, slug)
@@ -55,7 +56,8 @@ create table if not exists public.sections (
   list_id  uuid not null references public.lists(id) on delete cascade,
   title    text not null,
   sub      text,
-  warning  text,                            -- optional ⚠ note on every item in this section
+  warning  text,                            -- (legacy) single note; superseded by warnings
+  warnings jsonb not null default '[]'::jsonb,  -- [{style,text}] coloured notes on every item in the section
   visible  boolean not null default true,    -- hidden sections = "on hold", owner-only
   position int not null default 0
 );
@@ -77,6 +79,7 @@ create table if not exists public.items (
   hidden     boolean not null default false,  -- hidden from guests, still visible to the owner
   link_group uuid,                            -- peer-link: items sharing a value are "related"
   link_label text,                            -- custom label for the linked group (shared by members)
+  warnings   jsonb not null default '[]'::jsonb,  -- [{style,text}] coloured notes on this item
   created_at timestamptz not null default now()
 );
 
