@@ -129,9 +129,13 @@
   .actlist button.active{color:var(--claret);font-weight:600}
   .actlist svg{color:var(--soft);flex:0 0 auto}
   /* phones & tablets: no hover, so one labelled Options button instead of a row of unlabelled icons */
+  .moverow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 4px}
+  .moverow button{display:flex;align-items:center;justify-content:center;gap:7px;font:inherit;font-size:.9rem;font-weight:600;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:10px;padding:11px 8px;cursor:pointer}
+  .moverow button:disabled{opacity:.35;cursor:default}
   .ib.ib-more{display:none}
   @media (hover:none){
     [data-tip]:hover::after{display:none}
+    .grip{display:none}
     .iconrow .ib{display:none}
     .iconrow .ib.ib-more{display:inline-flex;width:auto;padding:0 12px;gap:7px;font:600 .82rem Inter,system-ui,sans-serif;color:var(--soft);height:32px}
   }
@@ -241,7 +245,7 @@
   .modal{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;max-width:440px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.3);max-height:90vh;overflow:auto}
   .modal h3{font-family:"Fraunces";color:var(--head);margin:0 0 6px}
   .modal .x{float:right;cursor:pointer;color:var(--soft);border:none;background:none;font-size:1.3rem}
-  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--claret-deep);color:#fff;padding:11px 18px;border-radius:10px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:.92rem}
+  .toast{pointer-events:none;position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--claret-deep);color:#fff;padding:11px 18px;border-radius:10px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:.92rem}
   .spin{display:flex;flex-direction:column;align-items:center;gap:15px;padding:90px 0;color:var(--soft);font-family:"Fraunces";font-style:italic;font-size:1.05rem}
   .spinner{width:32px;height:32px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--claret);animation:gspin .8s linear infinite}
   @keyframes gspin{to{transform:rotate(360deg)}}
@@ -343,7 +347,7 @@
   function pfOK(i){        // passes the guest's "show presents for" filter (itself or any sub-item)
     const pf=state.pfilter; if(!pf) return true;
     if(effPeople(i).includes(pf)) return true;
-    return state.items.some(c=>c.parent_id===i.id && !c.archived && pfOK(c));
+    return state.items.some(c=>c.parent_id===i.id && !!c.archived===!!i.archived && pfOK(c));
   }
   function peopleChipsHTML(i, ed){
     const ppl=listPeople(); if(!ppl.length) return "";
@@ -382,6 +386,9 @@
     person:_svg('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'),
     dots:_svg('<circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/>',{fill:'currentColor',sw:0}),
     tick:_svg('<polyline points="5 12.5 10 17 19 7"/>',{w:12,sw:3}),
+    up:_svg('<line x1="12" y1="19" x2="12" y2="5"/><polyline points="6 11 12 5 18 11"/>'),
+    down:_svg('<line x1="12" y1="5" x2="12" y2="19"/><polyline points="6 13 12 19 18 13"/>'),
+    unnest:_svg('<polyline points="15 10 20 5 15 0" transform="translate(0 4)"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/>'),
   };
 
   let session=null, profile=null, state={};
@@ -767,7 +774,9 @@
 
     // archive compartment: collapsible for everyone; owner can hide it from guests and edit items in it
     const ownerEditing = isOwner && editing;
-    const archVisible = items.filter(i=> i.archived && (!i.hidden || ownerEditing) && pfOK(i));
+    const archAll = items.filter(i=> i.archived && (!i.hidden || ownerEditing));
+    const archVisible = archAll.filter(i=>{ const par = i.parent_id && items.find(x=>x.id===i.parent_id);
+      return !(par && par.archived) && pfOK(i); });   // sub-items of archived items are drawn under them
     let archHTML="";
     if(archVisible.length && (ownerEditing || list.show_archived)){
       const collapsed = localStorage.getItem("elfdisco.giftlist.archc."+list.id)==="1";
@@ -858,7 +867,7 @@
     } else if(!ed && !i.archived){
       actions=`<button class="get" data-claim="${i.id}">Get this</button>`;
     }
-    const kids = state.items.filter(c=>c.parent_id===i.id && !c.archived && (!c.hidden || ed) && pfOK(c)).sort(byPos);
+    const kids = state.items.filter(c=>c.parent_id===i.id && !!c.archived===!!i.archived && (!c.hidden || ed) && pfOK(c)).sort(byPos);
     const kidHTML = kids.length ? `<div class="subitems">${kids.map(c=>renderItem(c,depth+1)).join("")}</div>` : "";
     const hasNotes = Array.isArray(i.warnings) && i.warnings.length>0;
     const iconRow = !ed ? "" : `<div class="iconrow">
@@ -866,6 +875,7 @@
       ${i.archived?"":`<button class="ib" data-subitem="${i.id}" data-tip="Add a sub-item">${ICON.sub}</button>
       ${depth===0?`<button class="ib ${i.link_group?'on':''}" data-linkitem="${i.id}" data-tip="${i.link_group?'Linked: change or unlink':'Link with another item'}">${ICON.link}</button>`:""}
       <button class="ib" data-moveitem="${i.id}" data-tip="Move to another section">${ICON.folder}</button>`}
+      ${i.parent_id?`<button class="ib" data-unnest="${i.id}" data-tip="Make it its own item (not a sub-item)">${ICON.unnest}</button>`:""}
       <button class="ib ${hasNotes?'on':''}" data-itemnotes="${i.id}" data-tip="${hasNotes?'Edit notes on this item':'Add a note just for this item'}">${ICON.warn}</button>
       ${listPeople().length?`<button class="ib ${(i.for_people||[]).length?'on':''}" data-people="${i.id}" data-tip="Who's it for?">${ICON.person}</button>`:""}
       <button class="ib ${i.hidden?'on':''}" data-hide="${i.id}" data-on="${i.hidden?1:0}" data-tip="${i.hidden?'Hidden from guests: click to show':'Hide from guests'}">${i.hidden?ICON.eyeoff:ICON.eye}</button>
@@ -884,11 +894,67 @@
     if(depth===0 && !i.archived) return `<div class="itemwrap" data-item="${i.id}">${cardHTML}${kidHTML}</div>`;
     return cardHTML + kidHTML;
   }
+  function descendants(id){ const out=[]; const walk=pid=> state.items.filter(c=>c.parent_id===pid).forEach(c=>{ out.push(c); walk(c.id); }); walk(id); return out; }
+  const topCount = secId => state.items.filter(i=>i.section_id===secId && !i.parent_id && !i.archived).length;
   async function archiveItem(id, on){
     const it=state.items.find(i=>i.id===id); if(!it) return;
+    const kids=descendants(id);                       // sub-items always travel with their parent
     const patch = on ? {archived:true, link_group:null, link_label:null} : {archived:false};  // archiving pulls it out of any linked group
-    Object.assign(it, patch); drawList();
-    await save(sb.from("items").update(patch).eq("id", id), on?"Moved to Archived":"Restored");
+    const par = it.parent_id ? state.items.find(x=>x.id===it.parent_id) : null;
+    let msg = on ? "Moved to Archived" + (kids.length?` with ${kids.length} sub-item${kids.length>1?"s":""}`:"") : "Restored";
+    if(!on && par && par.archived){ patch.parent_id=null; patch.position=topCount(it.section_id); msg="Restored as its own item (the item it was under is still archived)"; }
+    else if(!on && !it.parent_id) patch.position=topCount(it.section_id);   // comes back at the bottom of its section
+    Object.assign(it, patch); kids.forEach(k=> k.archived=!!on);
+    drawList();
+    await Promise.all([ save(sb.from("items").update(patch).eq("id", id)),
+      ...(kids.length ? [save(sb.from("items").update({archived:!!on}).in("id", kids.map(k=>k.id)))] : []) ]);
+    toast(msg);
+  }
+  async function unnestItem(id){
+    const it=state.items.find(i=>i.id===id); if(!it || !it.parent_id) return;
+    const par=state.items.find(x=>x.id===it.parent_id);
+    const changed=[it];
+    it.parent_id=null;
+    if(!it.archived){                                 // place it straight after the item it was under
+      const units=sectionUnits(it.section_id).filter(u=>!u.includes(it));
+      const at=units.findIndex(u=>par && u.includes(par));
+      units.splice(at<0?units.length:at+1, 0, [it]);
+      let k=0; units.flat().forEach(x=>{ if(x.position!==k && !changed.includes(x)) changed.push(x); x.position=k++; });
+    }
+    drawList();
+    await Promise.all(changed.map(x=> save(sb.from("items").update(x===it?{parent_id:null, position:x.position}:{position:x.position}).eq("id",x.id))));
+    toast("Now its own item");
+  }
+  // ---------- reordering without drag (phones) ----------
+  function sectionUnits(secId){   // top-level items in page order; a linked group is one unit
+    const top=state.items.filter(i=>i.section_id===secId && !i.parent_id && !i.archived).sort(byPos);
+    const seen={}, units=[];
+    top.forEach(it=>{ if(it.link_group){ if(!seen[it.link_group]){ seen[it.link_group]={pos:Infinity,items:[]}; units.push(seen[it.link_group]); }
+                        const u=seen[it.link_group]; u.items.push(it); u.pos=Math.min(u.pos,it.position); }
+                      else units.push({pos:it.position,items:[it]}); });
+    return units.sort((a,b)=>a.pos-b.pos).map(u=>u.items);
+  }
+  function reorderInfo(it){
+    if(!it || it.archived) return null;
+    if(it.parent_id){ const sib=state.items.filter(c=>c.parent_id===it.parent_id && !c.archived).sort(byPos); return {kind:"sub", sib, idx:sib.indexOf(it)}; }
+    const units=sectionUnits(it.section_id), ui=units.findIndex(u=>u.includes(it));
+    return {kind:"top", units, ui, inGroup: ui>=0 && units[ui].length>1, mi: ui>=0 ? units[ui].indexOf(it) : -1};
+  }
+  async function shiftItem(id, dir, wholeGroup){
+    const it=state.items.find(i=>i.id===id); const info=reorderInfo(it); if(!info) return;
+    const changed=[];
+    if(info.kind==="sub"){
+      const j=info.idx+dir; if(j<0 || j>=info.sib.length) return;
+      [info.sib[info.idx], info.sib[j]]=[info.sib[j], info.sib[info.idx]];
+      info.sib.forEach((x,k)=>{ if(x.position!==k){ x.position=k; changed.push(x); } });
+    } else {
+      const u=info.units;
+      if(info.inGroup && !wholeGroup){ const g=u[info.ui], j=info.mi+dir; if(j<0 || j>=g.length) return; [g[info.mi], g[j]]=[g[j], g[info.mi]]; }
+      else { const j=info.ui+dir; if(j<0 || j>=u.length) return; [u[info.ui], u[j]]=[u[j], u[info.ui]]; }
+      let k=0; u.flat().forEach(x=>{ if(x.position!==k){ x.position=k; changed.push(x); } k++; });
+    }
+    drawList();
+    await Promise.all(changed.map(x=> save(sb.from("items").update({position:x.position}).eq("id",x.id))));
   }
   async function toggleHidden(id, on){
     const it=state.items.find(i=>i.id===id); if(it) it.hidden=!on;   // optimistic
@@ -945,6 +1011,7 @@
           const it=state.items.find(x=>x.id===el.dataset.ednote); el.innerHTML=richNote((it&&it.note)||""); }; });
       app.querySelectorAll("[data-people]").forEach(b=> b.onclick=e=>{ e.stopPropagation(); peopleMenu(b.dataset.people, b); });
       app.querySelectorAll("[data-more]").forEach(b=> b.onclick=()=>itemActionsSheet(b.dataset.more));
+      app.querySelectorAll("[data-unnest]").forEach(b=> b.onclick=()=>unnestItem(b.dataset.unnest));
       app.querySelectorAll("[data-price]").forEach(el=> el.onclick=e=>{ e.stopPropagation(); priceMenu(el.dataset.price, el); });
       app.querySelectorAll("[data-moveitem]").forEach(b=> b.onclick=e=>{ e.stopPropagation(); moveMenu(b.dataset.moveitem, b); });
       app.querySelectorAll("[data-linkitem]").forEach(b=> b.onclick=()=>linkModal(b.dataset.linkitem));
@@ -1142,8 +1209,25 @@
       it.archived ? {ic:ICON.restore, label:"Restore to the list", go:()=>archiveItem(id,false)}
                   : {ic:ICON.archive, label:"Move to Archived", go:()=>archiveItem(id,true)},
     ];
-    modal(`<h3>${esc(it.title)}</h3><div class="actlist">${acts.map((a,k)=>`<button data-k="${k}">${a.ic}<span>${esc(a.label)}</span></button>`).join("")}</div>`, m=>{
-      m.querySelectorAll("[data-k]").forEach(b=> b.onclick=()=>{ closeModal(); acts[+b.dataset.k].go(); }); });
+    if(it.parent_id) acts.splice(1,0,{ic:ICON.unnest, label:"Make it its own item", go:()=>unnestItem(id)});
+    const info=reorderInfo(it);
+    const mv=[];   // [label, dir, wholeGroup, disabled]
+    let where="";
+    if(info && info.kind==="sub"){ where=`Sub-item ${info.idx+1} of ${info.sib.length}`;
+      mv.push(["Move up",-1,false,info.idx===0],["Move down",1,false,info.idx===info.sib.length-1]); }
+    else if(info && info.inGroup){ const g=info.units[info.ui];
+      where=`${info.mi+1} of ${g.length} in its linked group · group ${info.ui+1} of ${info.units.length} in the section`;
+      mv.push(["Move up",-1,false,info.mi===0],["Move down",1,false,info.mi===g.length-1],
+              ["Group up",-1,true,info.ui===0],["Group down",1,true,info.ui===info.units.length-1]); }
+    else if(info){ where=`Position ${info.ui+1} of ${info.units.length} in “${esc((state.sections.find(x=>x.id===it.section_id)||{}).title||"")}”`;
+      mv.push(["Move up",-1,false,info.ui===0],["Move down",1,false,info.ui===info.units.length-1]); }
+    const mvHTML = mv.length ? `<p class="muted" style="font-size:.82rem;margin:2px 0 0">${where}</p><div class="moverow">${mv.map((x,k)=>
+      `<button data-mv="${k}" ${x[3]?"disabled":""}>${x[1]<0?ICON.up:ICON.down}<span>${x[0]}</span></button>`).join("")}</div>` : "";
+    modal(`<h3>${esc(it.title)}</h3>${mvHTML}<div class="actlist">${acts.map((a,k)=>`<button data-k="${k}">${a.ic}<span>${esc(a.label)}</span></button>`).join("")}</div>`, m=>{
+      m.querySelectorAll("[data-k]").forEach(b=> b.onclick=()=>{ closeModal(); acts[+b.dataset.k].go(); });
+      m.querySelectorAll("[data-mv]").forEach(b=> b.onclick=async()=>{ const x=mv[+b.dataset.mv];
+        await shiftItem(id, x[1], x[2]); itemActionsSheet(id); });   // stays open so you can tap again
+    });
   }
   function priceMenu(itemId, anchor){
     const it=state.items.find(x=>x.id===itemId); if(!it) return;
@@ -1233,7 +1317,15 @@
     const secOpts = state.sections.slice().sort(byPos).map(s=>`<option value="${s.id}" ${s.id===defSec?"selected":""}>${esc(s.title)}</option>`).join("");
     const tierOpts = state.tiers.slice().sort(byPos).map(t=>`<option value="${t.coins}" ${it&&it.coins===t.coins?"selected":""}>${"£".repeat(t.coins)}  ${esc(t.hint)}</option>`).join("")
                    + `<option value="" ${it&&!it.coins?"selected":""}>Not sure / returnable</option>`;
-    const parentOpts = itemOptions(curParent, (o,d)=> d===0 && (!it || o.id!==it.id), "None (its own item)");
+    let parentOpts = itemOptions(curParent, (o,d)=> d===0 && (!it || o.id!==it.id), "None (its own item)");
+    if(it && it.archived){
+      const roots=state.items.filter(x=>x.archived && !x.parent_id && x.id!==it.id).sort(byPos);
+      if(roots.length) parentOpts += `<optgroup label="Archived">${roots.map(x=>`<option value="${x.id}" ${x.id===curParent?"selected":""}>${esc(x.title)}</option>`).join("")}</optgroup>`;
+    }
+    if(curParent && !parentOpts.includes(`value="${curParent}"`)){
+      const par=state.items.find(x=>x.id===curParent);
+      if(par) parentOpts += `<optgroup label="Currently under"><option value="${par.id}" selected>${esc(par.title)}</option></optgroup>`;
+    }
     const parentTitle = quickSub ? (state.items.find(x=>x.id===parentId)||{}).title||"" : "";
     modal(`
       <h3>${it?"Edit item":(quickSub?"Add a sub-item":"Add an item")}</h3>
