@@ -253,6 +253,26 @@
   .archtoggle{background:none;border:none;color:var(--soft);cursor:pointer;display:inline-flex;align-items:center;padding:2px;transition:transform .2s}
   .archtoggle.collapsed{transform:rotate(-90deg)}
   .archnote{font-size:.82rem;color:var(--soft);margin:-4px 0 12px}
+  .secrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .secrow.off .secname{color:var(--soft)}
+  .secrow.off .secmeta b{color:#d47a6e}
+  .secmove{display:flex;flex-direction:column;gap:3px}
+  .secmove .ib{height:22px;width:28px}
+  .secmove .ib:disabled{opacity:.25;cursor:default}
+  .secmain{flex:1;min-width:0}
+  .secname{font-family:"Fraunces";font-weight:600;font-size:1.05rem;padding:6px 9px;background:transparent;border-color:transparent}
+  .secname:hover{border-color:var(--line)}
+  .secname:focus{background:var(--field);border-color:var(--claret)}
+  .secmeta{font-size:.78rem;color:var(--soft);padding:2px 10px 0}
+  .secacts{display:flex;gap:4px}
+  .secadd{display:flex;gap:8px;margin-top:14px}
+  .secadd input{flex:1}
+  .secdel{border:1px solid rgba(192,90,78,.5);background:rgba(192,90,78,.1);border-radius:12px;padding:12px 14px;margin:8px 0}
+  .secdel p{margin:0 0 6px;font-size:.92rem}
+  .secdel label{margin-top:6px}
+  .secdel .row{margin-top:10px}
+  .btn.danger{color:#d47a6e;border-color:rgba(192,90,78,.55)}
+  @media (hover:none){ .secrow .ib{display:inline-flex} }
   .archcol{display:inline-flex;align-items:center;gap:5px;font:600 .78rem Inter,system-ui,sans-serif;color:var(--soft);background:none;border:1px solid var(--line);border-radius:999px;padding:5px 10px 5px 7px;cursor:pointer;white-space:nowrap}
   .archcol:hover{color:var(--ink);border-color:var(--soft)}
   .archcol svg{width:13px;height:13px}
@@ -265,7 +285,6 @@
   .btn.ghost{background:none;color:var(--claret);border:1px solid var(--line)}
   .btn.wide{display:block;width:100%;margin-top:10px}
   .btn.sm{padding:7px 12px;font-size:.84rem;border-radius:9px}
-  .btn.danger{background:#a23; }
   .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
   .center{text-align:center}
 
@@ -785,7 +804,7 @@
     if(isOwner){
       bar = `<div class="editbar">
         <button class="btn sm" id="editToggle">${editing?"View as guest":"Edit mode"}</button>
-        ${editing?`<button class="btn ghost sm" id="addSec">+ Section</button>
+        ${editing?`<button class="btn ghost sm" id="addSec">Sections</button>
           <button class="btn ghost sm" id="editTiers">Price tiers</button>
           <button class="btn ghost sm" id="listSettings">Settings</button>`:""}
         <button class="btn ghost sm" id="share">Share</button>
@@ -1023,7 +1042,7 @@
     if(byId("#editToggle")) byId("#editToggle").onclick=()=>{ saveTitleIfNeeded(); state.editing=!state.editing; drawList(); };
     if(byId("#share")) byId("#share").onclick=shareList;
     if(byId("#reveal")) byId("#reveal").onclick=doReveal;
-    if(byId("#addSec")) byId("#addSec").onclick=addSection;
+    if(byId("#addSec")) byId("#addSec").onclick=()=>sectionsModal();
     if(byId("#editTiers")) byId("#editTiers").onclick=editTiers;
     if(byId("#listSettings")) byId("#listSettings").onclick=listSettings;
 
@@ -1459,16 +1478,105 @@
   }
 
   // ---------- sections ----------
-  async function addSection(){
-    const pos=state.sections.length;
-    const { data } = await sb.from("sections").insert({list_id:state.list.id, title:"New section", position:pos, visible:true}).select().maybeSingle();
-    state.sections.push(data); drawList();
+  // ---------- sections manager ----------
+  const secItems = id => state.items.filter(i=>i.section_id===id);
+  const itemCountText = n => n===1 ? "1 item" : n+" items";
+  function sectionsModal(focusId){
+    modal(`<h3>Sections</h3><div id="seclist"></div>
+      <div class="secadd"><input id="newsec" placeholder="New section name, e.g. Stocking fillers"/><button class="btn sm" id="addsecbtn">Add</button></div>
+      <button class="btn wide" id="secdone">Done</button>`, m=>{
+      m.classList.add("wide");
+      const list=m.querySelector("#seclist");
+      const paint=(focus)=>{
+        const secs=state.sections.slice().sort(byPos);
+        list.innerHTML = secs.length ? secs.map((x,k)=>{
+          const n=secItems(x.id).filter(i=>!i.archived).length, w=(x.warnings||[]).length;
+          return `<div class="secrow${x.visible?'':' off'}" data-sid="${x.id}">
+            <div class="secmove"><button class="ib" data-up ${k===0?'disabled':''} data-tip="Move up">${ICON.up}</button><button class="ib" data-down ${k===secs.length-1?'disabled':''} data-tip="Move down">${ICON.down}</button></div>
+            <div class="secmain"><input class="secname" value="${esc(x.title)}" aria-label="Section name"/>
+              <div class="secmeta">${itemCountText(n)}${x.visible?'':' · <b>hidden from guests</b>'}${w?` · ${w} note${w>1?'s':''}`:''}</div></div>
+            <div class="secacts">
+              <button class="ib${x.visible?'':' hidstate'}" data-vis data-tip="${x.visible?'Visible to guests: click to hide':'Hidden from guests: click to show'}">${x.visible?ICON.eye:ICON.eyeoff}</button>
+              <button class="ib${w?' on':''}" data-notes data-tip="Notes on every item here">${ICON.warn}</button>
+              <button class="ib" data-del data-tip="Delete section">${ICON.trash}</button>
+            </div></div>`; }).join("")
+          : `<p class="muted center" style="margin:14px 0">No sections yet. Add one below.</p>`;
+        list.querySelectorAll(".secrow").forEach(row=>{
+          const sec=state.sections.find(x=>x.id===row.dataset.sid);
+          const name=row.querySelector(".secname");
+          const commit=()=>{ const v=name.value.trim(); if(!v){ name.value=sec.title; return; }
+            if(v!==sec.title){ sec.title=v; save(sb.from("sections").update({title:v}).eq("id",sec.id)); } };
+          name.onblur=commit; name.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); name.blur(); } };
+          row.querySelector("[data-up]").onclick=()=>moveSection(sec.id,-1).then(()=>paint());
+          row.querySelector("[data-down]").onclick=()=>moveSection(sec.id,1).then(()=>paint());
+          row.querySelector("[data-vis]").onclick=async()=>{ await toggleSectionVis(sec.id, sec.visible); paint(); };
+          row.querySelector("[data-notes]").onclick=()=>sectionWarnModal(sec.id, ()=>sectionsModal());
+          row.querySelector("[data-del]").onclick=()=>deleteSectionPrompt(row, sec, paint);
+        });
+        if(focus){ const el=list.querySelector(`.secrow[data-sid="${focus}"] .secname`); if(el){ el.focus(); el.select(); el.scrollIntoView({block:"nearest"}); } }
+      };
+      const add=async()=>{
+        const inp=m.querySelector("#newsec"), title=inp.value.trim()||"New section";
+        const pos=state.sections.reduce((mx,x)=>Math.max(mx,x.position),-1)+1;
+        const { data, error } = await sb.from("sections").insert({list_id:state.list.id, title, position:pos, visible:true}).select().maybeSingle();
+        if(error){ toast("Couldn't add: "+error.message); return; }
+        state.sections.push(data); inp.value=""; paint(inp.value? null : (title==="New section"?data.id:null)); drawList();
+        toast(`Added “${title}”`); if(title!=="New section") inp.focus();
+      };
+      m.querySelector("#addsecbtn").onclick=add;
+      m.querySelector("#newsec").onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); add(); } };
+      m.querySelector("#secdone").onclick=()=>{ const a=document.activeElement; if(a && a.blur) a.blur(); closeModal(); drawList(); };
+      paint(focusId);
+    });
   }
-  async function delSection(id){
-    const n=state.items.filter(i=>i.section_id===id).length;
-    if(!confirm(n?`Delete this section and its ${n} item(s)?`:"Delete this empty section?")) return;
-    await sb.from("sections").delete().eq("id", id);
-    state.sections=state.sections.filter(s=>s.id!==id); state.items=state.items.filter(i=>i.section_id!==id); drawList();
+  async function moveSection(id, dir){
+    const secs=state.sections.slice().sort(byPos), k=secs.findIndex(x=>x.id===id), j=k+dir;
+    if(k<0 || j<0 || j>=secs.length) return;
+    [secs[k],secs[j]]=[secs[j],secs[k]];
+    const changed=[]; secs.forEach((x,n)=>{ if(x.position!==n){ x.position=n; changed.push(x); } });
+    drawList();
+    await Promise.all(changed.map(x=> save(sb.from("sections").update({position:x.position}).eq("id",x.id))));
+  }
+  // delete with a proper choice: move the items somewhere else, or delete them too
+  function deleteSectionPrompt(row, sec, after){
+    const items=secItems(sec.id), live=items.filter(i=>!i.archived).length, others=state.sections.filter(x=>x.id!==sec.id).sort(byPos);
+    const box=document.createElement("div"); box.className="secdel";
+    box.innerHTML = items.length
+      ? `<p><b>Delete “${esc(sec.title)}”?</b> It has ${itemCountText(items.length)}${live!==items.length?` (${items.length-live} archived)`:""}.</p>
+         ${others.length?`<label>Move its items to</label><select>${others.map(x=>`<option value="${x.id}">${esc(x.title)}</option>`).join("")}</select>`:""}
+         <div class="row">${others.length?`<button class="btn sm" data-move>Move items and delete</button>`:""}<button class="btn ghost sm danger" data-all>Delete with items</button><button class="btn ghost sm" data-cancel>Cancel</button></div>`
+      : `<p><b>Delete “${esc(sec.title)}”?</b> It's empty.</p><div class="row"><button class="btn ghost sm danger" data-all>Delete</button><button class="btn ghost sm" data-cancel>Cancel</button></div>`;
+    if(row){ row.replaceWith(box); }
+    box.querySelector("[data-cancel]").onclick=()=> row ? after() : closeModal();
+    const mv=box.querySelector("[data-move]");
+    if(mv) mv.onclick=async()=>{ const to=box.querySelector("select").value; await removeSection(sec.id, to); after(); };
+    box.querySelector("[data-all]").onclick=async()=>{
+      if(items.length && !confirm(`Permanently delete “${sec.title}” and ${itemCountText(items.length)}? This can't be undone.`)) return;
+      await removeSection(sec.id, null); after(); };
+    return box;
+  }
+  async function removeSection(id, moveTo){
+    const sec=state.sections.find(x=>x.id===id); if(!sec) return;
+    if(moveTo){
+      let start=state.items.filter(i=>i.section_id===moveTo && !i.parent_id && !i.archived).length;
+      const mine=state.items.filter(i=>i.section_id===id);
+      mine.filter(i=>!i.parent_id).sort(byPos).forEach(i=>{ if(!i.archived) i.position=start++; });
+      mine.forEach(i=> i.section_id=moveTo);
+      const { error } = await sb.from("items").update({section_id:moveTo}).eq("section_id", id);
+      if(error){ toast("Couldn't move items: "+error.message); return; }
+      await Promise.all(mine.filter(i=>!i.parent_id && !i.archived).map(i=> sb.from("items").update({position:i.position}).eq("id",i.id)));
+    }
+    const { error } = await sb.from("sections").delete().eq("id", id);
+    if(error){ toast("Couldn't delete: "+error.message); return; }
+    state.sections=state.sections.filter(x=>x.id!==id);
+    if(!moveTo) state.items=state.items.filter(i=>i.section_id!==id);
+    drawList();
+    toast(moveTo?`Deleted “${sec.title}”, items moved to “${(state.sections.find(x=>x.id===moveTo)||{}).title}”`:`Deleted “${sec.title}”`);
+  }
+  function delSection(id){   // the trash button on a section header
+    const sec=state.sections.find(x=>x.id===id); if(!sec) return;
+    modal(`<h3>Delete section</h3><div id="delhost"></div>`, m=>{
+      const box=deleteSectionPrompt(null, sec, ()=>closeModal()); m.querySelector("#delhost").appendChild(box); });
   }
   async function toggleSectionVis(id, on){
     const s=state.sections.find(x=>x.id===id); if(s) s.visible=!on; drawList();
@@ -1487,7 +1595,7 @@
         closeModal(); drawList(); toast("Group renamed."); };
     });
   }
-  function sectionWarnModal(secId){
+  function sectionWarnModal(secId, back){
     const s=state.sections.find(x=>x.id===secId); if(!s) return;
     modal(`<h3>Notes on “${esc(s.title)}”</h3>
       <p class="muted" style="font-size:.88rem">Shown under every item in this section. Add as many as you like and pick a colour for each: caution, positive, info or important.</p>
@@ -1495,7 +1603,7 @@
       <button class="btn wide" id="go">Save</button>`, m=>{
       m.classList.add("wide"); wireWarningsEditor(m);
       m.querySelector("#go").onclick=async()=>{ const w=readWarnings(m); s.warnings=w; s.warning=null; closeModal(); drawList();
-        await save(sb.from("sections").update({warnings:w, warning:null}).eq("id", secId), "Saved"); };
+        await save(sb.from("sections").update({warnings:w, warning:null}).eq("id", secId), "Saved"); if(back) back(); };
     });
   }
 
