@@ -291,17 +291,36 @@
   label{display:block;font-size:.82rem;color:var(--soft);margin:12px 0 4px;font-weight:600}
   input,textarea,select{width:100%;font-family:inherit;font-size:1rem;color:var(--ink);background:var(--field);border:1px solid var(--field-line);border-radius:9px;padding:10px 12px}
   textarea{resize:vertical;min-height:62px}
-  .err{color:#c0392b;font-size:.86rem;margin-top:8px}
+  .err{color:#d47a6e;font-size:.86rem;margin-top:8px}
+  .err:empty{display:none}
+  .btn.busy,button.busy{opacity:.8;cursor:progress}
+  .bspin{display:inline-block;width:13px;height:13px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;margin-right:8px;vertical-align:-2px;animation:gspin .7s linear infinite}
+  a.btn{display:inline-block;text-decoration:none;text-align:center}
   .muted{color:var(--soft)}
 
   .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;max-width:420px;margin:30px auto;box-shadow:var(--sh)}
   .panel h2{font-family:"Fraunces";color:var(--head);margin:.1em 0 .3em}
 
   .editbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:0 auto 22px;max-width:620px}
-  .listcard{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--sh)}
-  .listcard .b{flex:1;min-width:0}
-  .listcard .lt{font-family:"Fraunces";font-weight:600;font-size:1.15rem;color:var(--ink)}
-  .listcard.arch{opacity:.6}
+  .listcard{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"b open" "acts acts";gap:12px 14px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 16px 12px;margin-bottom:12px;box-shadow:var(--sh)}
+  .listcard.simple{grid-template-areas:"b open";padding-bottom:15px}
+  .listcard .b{grid-area:b;min-width:0;text-decoration:none;color:inherit}
+  .listcard .open{grid-area:open}
+  .listcard .lt{font-family:"Fraunces";font-weight:600;font-size:1.18rem;line-height:1.25;color:var(--ink);overflow-wrap:anywhere}
+  @media (hover:hover){ .listcard .b:hover .lt{color:var(--claret)} }
+  .listcard .ls{color:var(--soft);font-size:.86rem;line-height:1.4;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .listcard .lacts{grid-area:acts;display:flex;flex-wrap:wrap;gap:6px;border-top:1px solid var(--line);padding-top:11px}
+  .listcard .lacts button{display:inline-flex;align-items:center;justify-content:center;gap:6px;font:600 .8rem Inter,system-ui,sans-serif;color:var(--soft);background:none;border:1px solid var(--line);border-radius:8px;padding:7px 11px;cursor:pointer}
+  .listcard .lacts button:hover{color:var(--ink);border-color:var(--soft)}
+  .listcard .lacts svg{width:14px;height:14px}
+  .listcard.arch{opacity:.65}
+  @media (max-width:560px){
+    .panel{margin:20px 12px;padding:20px 18px}
+    .listcard{padding:14px 14px 11px}
+    .listcard .lacts{gap:6px;flex-wrap:nowrap}
+    .listcard .lacts button{flex:1 1 0;min-width:0;gap:5px;padding:8px 2px;font-size:.78rem}
+    .listcard .lacts button span{white-space:nowrap}
+  }
 
   /* modal */
   .scrim{position:fixed;inset:0;background:rgba(20,15,18,.5);display:flex;align-items:center;justify-content:center;z-index:50;padding:18px}
@@ -367,6 +386,9 @@
   const slugify = s => (s||"").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40) || "list";
   function toast(msg){ const t=document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2600); }
   // Supabase queries are lazy: they only run once awaited/then'd. Every background save goes through here.
+  // put a button into a "working…" state; returns a function that restores it
+  function busy(btn, text){ if(!btn) return ()=>{}; const was=btn.innerHTML; btn.disabled=true; btn.classList.add("busy");
+    btn.innerHTML=`<span class="bspin"></span>${esc(text)}`; return ()=>{ btn.disabled=false; btn.classList.remove("busy"); btn.innerHTML=was; }; }
   const save = (q, okMsg) => q.then(({error})=>{ if(error){ console.error(error); toast("Couldn't save: "+error.message); } else if(okMsg) toast(okMsg); });
   const byPos = (a,b)=>a.position-b.position;
   const WARN_STYLES = {
@@ -452,6 +474,7 @@
     x:_svg('<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>',{w:14}),
     person:_svg('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'),
     dots:_svg('<circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/>',{fill:'currentColor',sw:0}),
+    copy:_svg('<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'),
     tick:_svg('<polyline points="5 12.5 10 17 19 7"/>',{w:12,sw:3}),
     up:_svg('<line x1="12" y1="19" x2="12" y2="5"/><polyline points="6 11 12 5 18 11"/>'),
     down:_svg('<line x1="12" y1="5" x2="12" y2="19"/><polyline points="6 13 12 19 18 13"/>'),
@@ -544,10 +567,13 @@
   // ===================================================================
   //  VIEWS — public / auth
   // ===================================================================
+  function notFound(msg){
+    document.title="Not found · elfdisco";
+    app.innerHTML=`<div class="panel center"><h2>Not found</h2><p class="muted">${esc(msg)}</p><a class="btn ghost wide" href="#/">Go to elfdisco</a></div>`;
+  }
   function renderLanding(){
     app.innerHTML = `
       <div class="wrap">
-        <div class="kicker">elfdisco</div>
         <h1 class="title">Gift lists</h1>
         <div class="sub">make a list, share a link, nobody doubles up</div>
         <div class="rule"></div>
@@ -562,15 +588,15 @@
   async function renderUserLists(owner, note){
     const { data: lists } = await sb.from("lists").select("slug,title,subtitle")
       .eq("owner_id", owner.id).eq("is_archived", false).order("created_at");
-    const rows = (lists||[]).map(l=>`
-      <div class="listcard">
-        <div class="b"><div class="lt">${esc(l.title)}</div>
-        ${l.subtitle?`<div class="muted" style="font-size:.84rem">${esc(l.subtitle)}</div>`:""}</div>
-        <button class="btn sm" onclick="location.hash='#/${esc(owner.username)}/${esc(l.slug)}'">Open</button>
-      </div>`).join("") || '<p class="muted center">No live lists right now.</p>';
+    const rows = (lists||[]).map(l=>{ const href=`#/${esc(owner.username)}/${esc(l.slug)}`; return `
+      <div class="listcard simple">
+        <a class="b" href="${href}"><div class="lt">${esc(l.title)}</div>${l.subtitle?`<div class="ls">${esc(l.subtitle)}</div>`:""}</a>
+        <a class="btn sm open" href="${href}">Open</a>
+      </div>`; }).join("") || `<p class="muted center">${esc(owner.display_name)} has no lists to show right now.</p>`;
+    document.title = owner.display_name+"'s lists · elfdisco";
     app.innerHTML = `<div class="wrap">
-      <div class="kicker">a gift list</div>
-      <h1 class="title">${esc(owner.display_name)}</h1>
+      <div class="kicker">gift lists</div>
+      <h1 class="title">${esc(owner.display_name)}'s lists</h1>
       <div class="rule"></div>
       ${note||""}
       ${rows}
@@ -578,7 +604,7 @@
   }
   async function renderUser(username){
     const { data: owner } = await sb.from("profiles").select("*").eq("username", username).maybeSingle();
-    if(!owner){ app.innerHTML='<div class="panel center"><h2>Not found</h2><p class="muted">No such person.</p></div>'; return; }
+    if(!owner) return notFound("We couldn't find anyone with that link. Check it was copied in full.");
     renderUserLists(owner);
   }
 
@@ -594,13 +620,17 @@
         <button class="btn wide" id="go">Sign in</button>
         <button class="btn ghost wide" id="su">Create an account instead</button>
       </div>`;
-    $("#go").onclick = async()=>{
-      $("#er").textContent="Signing in…";
+    const go=async()=>{
+      $("#er").textContent="";
       const email=$("#em").value.trim(), password=$("#pw").value;
+      if(!email || !password){ $("#er").textContent="Enter your email and password."; return; }
+      const done=busy($("#go"),"Signing in…");
       const { error } = await sb.auth.signInWithPassword({email,password});
-      if(error){ $("#er").textContent=error.message; }
+      if(error){ done(); $("#er").textContent = /invalid login/i.test(error.message) ? "That email and password don't match." : error.message; }
       else { location.hash="#/"; }
     };
+    $("#go").onclick = go;
+    $("#pw").onkeydown = e=>{ if(e.key==="Enter") go(); };
     $("#su").onclick = ()=> renderSignup();
   }
 
@@ -608,8 +638,8 @@
     app.innerHTML = `
       <div class="panel">
         <h2>Create your account</h2>
-        <label>Your name (shown as the list owner)</label><input id="dn" autocomplete="name"/>
-        <label>Username (used in your link: /giftlist/<b>you</b>/…)</label><input id="un"/>
+        <label>Your name</label><input id="dn" autocomplete="name" placeholder="e.g. Ed"/>
+        <label>Username for your list links</label><input id="un" autocapitalize="none" placeholder="e.g. ed"/>
         <label>Email</label><input id="em" type="email" autocomplete="email"/>
         <label>Password (8+ characters)</label><input id="pw" type="password" autocomplete="new-password"/>
         <div class="err" id="er"></div>
@@ -623,8 +653,9 @@
       if(!display||!username||!email||password.length<8){ $("#er").textContent="Fill everything in; password needs 8+ characters."; return; }
       // remember desired profile until the session is ready
       localStorage.setItem("elfdisco.giftlist.pending", JSON.stringify({username, display}));
+      const done=busy($("#go"),"Creating account…");
       const { data, error } = await sb.auth.signUp({email,password});
-      if(error){ $("#er").textContent=error.message; return; }
+      if(error){ done(); $("#er").textContent=error.message; return; }
       if(!data.session){ app.innerHTML=`<div class="panel center"><h2>Check your email</h2><p class="muted">Confirm your address, then come back and sign in.</p></div>`; }
       // if a session is returned (email confirmation off), onAuthStateChange handles the rest
     };
@@ -635,9 +666,8 @@
     app.innerHTML = `
       <div class="panel">
         <h2>Pick your username</h2>
-        <p class="muted" style="font-size:.9rem">This goes in your list links: /giftlist/<b>username</b>/…</p>
         <label>Your name</label><input id="dn" value="${esc(pend?pend.display:(session?session.user.email.split('@')[0]:''))}"/>
-        <label>Username</label><input id="un" value="${esc(pend?pend.username:'')}"/>
+        <label>Username for your list links</label><input id="un" autocapitalize="none" value="${esc(pend?pend.username:'')}"/>
         <div class="err" id="er"></div>
         <button class="btn wide" id="go">Save</button>
       </div>`;
@@ -645,8 +675,9 @@
       $("#er").textContent="";
       const display_name=$("#dn").value.trim(), username=slugify($("#un").value||display_name);
       if(!display_name||!username){ $("#er").textContent="Name and username required."; return; }
+      const done=busy($("#go"),"Saving…");
       const { error } = await sb.from("profiles").insert({id:session.user.id, username, display_name});
-      if(error){ $("#er").textContent = error.message.includes("duplicate")?"That username is taken.":error.message; return; }
+      if(error){ done(); $("#er").textContent = error.message.includes("duplicate")?"That username is taken.":error.message; return; }
       localStorage.removeItem("elfdisco.giftlist.pending");
       await ensureProfile(); renderAuthBtn(); location.hash="#/";
     };
@@ -659,20 +690,19 @@
     const lists = await myLists(session.user.id);
     const live = lists.filter(l=>!l.is_archived);
     const arch = lists.filter(l=>l.is_archived);
-    const card = l=>`
+    const card = l=>{ const href=`#/${esc(profile.username)}/${esc(l.slug)}`; return `
       <div class="listcard ${l.is_archived?'arch':''}">
-        <div class="b">
-          <div class="lt">${esc(l.title)}</div>
-          ${l.subtitle?`<div class="muted" style="font-size:.84rem">${esc(l.subtitle)}</div>`:""}
+        <a class="b" href="${href}"><div class="lt">${esc(l.title)}</div>${l.subtitle?`<div class="ls">${esc(l.subtitle)}</div>`:""}</a>
+        <a class="btn sm open" href="${href}">Open</a>
+        <div class="lacts">
+          <button data-copy="${esc(profile.username)}/${esc(l.slug)}">${ICON.link}<span>Copy link</span></button>
+          <button data-dup="${l.id}">${ICON.copy}<span>Duplicate</span></button>
+          <button data-arch="${l.id}" data-on="${l.is_archived?1:0}">${l.is_archived?ICON.restore:ICON.archive}<span>${l.is_archived?'Unarchive':'Archive'}</span></button>
         </div>
-        <button class="btn sm" onclick="location.hash='#/${esc(profile.username)}/${esc(l.slug)}'">Open</button>
-        <button class="btn ghost sm" data-copy="${esc(profile.username)}/${esc(l.slug)}">Copy link</button>
-        <button class="btn ghost sm" data-dup="${l.id}">Duplicate</button>
-        <button class="btn ghost sm" data-arch="${l.id}" data-on="${l.is_archived?1:0}">${l.is_archived?'Unarchive':'Archive'}</button>
-      </div>`;
-    const liveHTML = live.length ? live.map(card).join("") : '<p class="muted center">No live lists yet — make one below.</p>';
+      </div>`; };
+    const liveHTML = live.length ? live.map(card).join("") : '<p class="muted center">No lists yet. Make your first one below.</p>';
     const archHTML = arch.length
-      ? `<div class="sec-h" style="margin-top:36px"><h2>Archived</h2><span class="ln"></span></div>`+arch.map(card).join("")
+      ? `<div class="sec-h" style="margin-top:36px"><h2>Archived</h2><span class="n">${arch.length}</span><span class="ln"></span></div>`+arch.map(card).join("")
       : "";
     app.innerHTML = `
       <div class="wrap">
@@ -688,8 +718,8 @@
       const url=location.origin+location.pathname+"#/"+b.dataset.copy;
       navigator.clipboard.writeText(url).then(()=>toast("Link copied")).catch(()=>toast(url));
     });
-    app.querySelectorAll("[data-dup]").forEach(b=> b.onclick=()=>duplicateList(b.dataset.dup));
-    app.querySelectorAll("[data-arch]").forEach(b=> b.onclick=()=>toggleArchive(b.dataset.arch, b.dataset.on==="1"));
+    app.querySelectorAll("[data-dup]").forEach(b=> b.onclick=()=>{ busy(b,"Duplicating…"); duplicateList(b.dataset.dup); });
+    app.querySelectorAll("[data-arch]").forEach(b=> b.onclick=()=>{ busy(b,"Saving…"); toggleArchive(b.dataset.arch, b.dataset.on==="1"); });
   }
 
   function newListModal(){
@@ -756,8 +786,8 @@
   // ===================================================================
   async function renderList(username, slug){
     const res = await resolveList(username, slug);
-    if(!res || !res.owner){ app.innerHTML='<div class="panel center"><h2>Not found</h2><p class="muted">No such person.</p></div>'; return; }
-    if(!res.list){ app.innerHTML='<div class="panel center"><h2>Not found</h2><p class="muted">No such list.</p></div>'; return; }
+    if(!res || !res.owner) return notFound("We couldn't find that list. Check the link was copied in full.");
+    if(!res.list) return renderUserLists(res.owner, `<div class="notice center">That list doesn't exist any more, or its link has changed. Here are ${esc(res.owner.display_name)}'s current lists:</div>`);
     state = { ...res, username, slug, editing:false, revealed:false, claims:[], pfilter: sessionStorage.getItem("elfdisco.giftlist.pf."+res.list.id)||null };
     state.isOwner = !!(session && session.user.id===res.owner.id);
     state.editing = state.isOwner;   // owners start in edit mode; "View as guest" switches it off
@@ -783,9 +813,10 @@
   function renderPwGate(list, okKey){
     app.innerHTML = `<div class="panel"><h2>${esc(list.title)}</h2>
       <p class="muted">This list is password protected.</p>
-      <label>Password</label><input id="pw" type="password"/>
+      <label>Password</label><input id="pw" type="password" autocomplete="off"/>
       <div class="err" id="er"></div>
       <button class="btn wide" id="go">View list</button></div>`;
+    $("#pw").onkeydown = e=>{ if(e.key==="Enter") $("#go").click(); };
     $("#go").onclick = async()=>{
       const { data: ok } = await sb.rpc("verify_list_password",{p_list_id:list.id, p_attempt:$("#pw").value});
       if(ok){ sessionStorage.setItem(okKey,"1"); renderList(state.username, state.slug); }
