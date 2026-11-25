@@ -30,6 +30,7 @@ create table if not exists public.lists (
   surprise_mode boolean not null default true,   -- owner can't see claims unless they reveal
   is_archived   boolean not null default false,
   show_archived boolean not null default true,   -- show the "Archived" items section to guests
+  archived_collapsed boolean not null default true,  -- guests see the Archived section collapsed until they open it
   item_warning  text,
   people        jsonb not null default '[]'::jsonb,  -- [{id,name,color,emoji}] who the list is for                          -- optional note shown as a ⚠ on every item (hover)
   created_at    timestamptz not null default now(),

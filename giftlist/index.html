@@ -253,6 +253,9 @@
   .archtoggle{background:none;border:none;color:var(--soft);cursor:pointer;display:inline-flex;align-items:center;padding:2px;transition:transform .2s}
   .archtoggle.collapsed{transform:rotate(-90deg)}
   .archnote{font-size:.82rem;color:var(--soft);margin:-4px 0 12px}
+  .archcol{display:inline-flex;align-items:center;gap:5px;font:600 .78rem Inter,system-ui,sans-serif;color:var(--soft);background:none;border:1px solid var(--line);border-radius:999px;padding:5px 10px 5px 7px;cursor:pointer;white-space:nowrap}
+  .archcol:hover{color:var(--ink);border-color:var(--soft)}
+  .archcol svg{width:13px;height:13px}
   .taken-chip{background:var(--soft);color:var(--card)}
   .hiddenbadge{font-size:.64rem;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--card);background:var(--soft);border-radius:5px;padding:2px 6px;margin-left:6px;vertical-align:middle}
   .card.ishidden{opacity:.6}
@@ -700,7 +703,7 @@
     const used = new Set((await myLists(session.user.id)).map(l=>l.slug));
     let slug=base, n=2; while(used.has(slug)) slug=base+"-"+(n++);
     const { data: nl, error } = await sb.from("lists").insert({ owner_id:session.user.id, slug, title:src.title, subtitle:src.subtitle,
-      item_warning:src.item_warning, show_archived:src.show_archived, people:src.people||[], theme_light:src.theme_light, theme_dark:src.theme_dark }).select().maybeSingle();
+      item_warning:src.item_warning, show_archived:src.show_archived, archived_collapsed:src.archived_collapsed, people:src.people||[], theme_light:src.theme_light, theme_dark:src.theme_dark }).select().maybeSingle();
     if(error){ toast(error.message); return; }
     const uid=()=> crypto.randomUUID ? crypto.randomUUID() : ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^Math.random()*16>>c/4).toString(16));
     const secMap={}, itemMap={}, grpMap={};
@@ -826,7 +829,8 @@
       return !(par && par.archived) && pfOK(i); });   // sub-items of archived items are drawn under them
     let archHTML="";
     if(archVisible.length && (ownerEditing || list.show_archived)){
-      const collapsed = localStorage.getItem("elfdisco.giftlist.archc."+list.id)==="1";
+      const mine = localStorage.getItem("elfdisco.giftlist.archc."+list.id);
+      const collapsed = mine!==null ? mine==="1" : (ownerEditing ? false : list.archived_collapsed!==false);
       const secIdx = id => { const k=sections.findIndex(s=>s.id===id); return k<0?999:k; };
       archVisible.sort((a,b)=> secIdx(a.section_id)-secIdx(b.section_id) || a.position-b.position);
       const archHidden = ownerEditing && !list.show_archived;
@@ -835,6 +839,7 @@
           <button class="archtoggle ${collapsed?'collapsed':''}" id="archToggle" aria-label="${collapsed?'Show':'Collapse'} archived items">${ICON.chevron}</button>
           <h2>Archived</h2><span class="n">${archVisible.length}</span>
           <span class="ln"></span>
+          ${(ownerEditing && list.show_archived)?`<button class="archcol" data-archcol="1" data-tip="What guests see when they open the list">${ICON.chevron}<span>Guests see it ${list.archived_collapsed!==false?'collapsed':'open'}</span></button>`:""}
           ${ownerEditing?`<button class="iconbtn${list.show_archived?'':' hidstate'}" data-archvis="1" data-tip="${list.show_archived?'Visible to guests: click to hide':'Hidden from guests: click to show'}">${list.show_archived?ICON.eye:ICON.eyeoff}</button>`:""}
         </div>
         ${archHidden?`<div class="hidnote">${ICON.eyeoff}<span><b>Hidden from guests.</b> Nobody but you can see archived items.</span><button data-archvis="1">Show to guests</button></div>`:""}
@@ -1039,7 +1044,12 @@
       state.pfilter=b.dataset.pf||null; sessionStorage.setItem("elfdisco.giftlist.pf."+list.id, state.pfilter||""); drawList(); });
     // archived section: collapse (everyone, remembered per browser) + guest visibility (owner)
     if(byId("#archToggle")) byId("#archToggle").onclick=()=>{
-      const k="elfdisco.giftlist.archc."+list.id; localStorage.setItem(k, localStorage.getItem(k)==="1"?"0":"1"); drawList(); };
+      const k="elfdisco.giftlist.archc."+list.id, el=byId("#archToggle");
+      localStorage.setItem(k, el.classList.contains("collapsed")?"0":"1"); drawList(); };
+    app.querySelectorAll("[data-archcol]").forEach(b=> b.onclick=async()=>{
+      list.archived_collapsed = list.archived_collapsed===false; drawList();
+      await save(sb.from("lists").update({archived_collapsed:list.archived_collapsed}).eq("id", list.id),
+        list.archived_collapsed?"Guests will see Archived collapsed":"Guests will see Archived open"); });
     app.querySelectorAll("[data-archvis]").forEach(b=> b.onclick=async()=>{
       list.show_archived=!list.show_archived; drawList();
       await save(sb.from("lists").update({show_archived:list.show_archived}).eq("id", list.id), list.show_archived?"Archived items visible to guests":"Archived items hidden from guests"); });
