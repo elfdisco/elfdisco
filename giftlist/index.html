@@ -1799,18 +1799,28 @@
   // ===================================================================
   //  BOOT
   // ===================================================================
-  sb.auth.onAuthStateChange(async (_evt, s)=>{
-    session=s; await ensureProfile();
-    // finish signup profile creation if a session just arrived
-    if(session && !profile){
-      const pend=JSON.parse(localStorage.getItem("elfdisco.giftlist.pending")||"null");
-      if(pend){ const { error }=await sb.from("profiles").insert({id:session.user.id, username:pend.username, display_name:pend.display});
-        if(!error){ localStorage.removeItem("elfdisco.giftlist.pending"); await ensureProfile(); } }
-    }
-    renderAuthBtn();
-    const path = location.hash.replace(/^#\/?/,"").split("/")[0];
-    if(session && path==="signin"){ location.hash="#/"; return; }
-    route();
+  // Only redraw when the signed-in person actually changes (sign in / sign out).
+  // Supabase also fires this when a tab regains focus and quietly refreshes the session;
+  // redrawing then would reset the page to the top for no reason.
+  let knownUid;   // undefined until the first load has run
+  sb.auth.onAuthStateChange((evt, s)=>{
+    const uid = s ? s.user.id : null;
+    session = s;   // always keep the fresh token
+    if(knownUid===undefined || uid===knownUid) return;
+    knownUid = uid;
+    setTimeout(async ()=>{   // run outside the auth callback, as Supabase recommends
+      await ensureProfile();
+      // finish signup profile creation if a session just arrived
+      if(session && !profile){
+        const pend=JSON.parse(localStorage.getItem("elfdisco.giftlist.pending")||"null");
+        if(pend){ const { error }=await sb.from("profiles").insert({id:session.user.id, username:pend.username, display_name:pend.display});
+          if(!error){ localStorage.removeItem("elfdisco.giftlist.pending"); await ensureProfile(); } }
+      }
+      renderAuthBtn();
+      const path = location.hash.replace(/^#\/?/,"").split("/")[0];
+      if(session && path==="signin"){ location.hash="#/"; return; }
+      route();
+    }, 0);
   });
 
   (()=>{   // top bar: away on scroll down, back the moment you scroll up
@@ -1826,7 +1836,8 @@
 
   (async ()=>{
     const { data } = await sb.auth.getSession();
-    session=data.session; await ensureProfile(); renderAuthBtn();
+    session=data.session; knownUid = session ? session.user.id : null;
+    await ensureProfile(); renderAuthBtn();
     window.addEventListener("hashchange", route);
     route();
   })();
