@@ -88,7 +88,17 @@
   .grouplabel{font-size:.68rem;letter-spacing:.1em;font-weight:700;color:var(--gold)}
   .grouplabel.editable{cursor:pointer;border-bottom:1px dashed rgba(200,154,78,.55);padding-bottom:1px}
   .groupzone{min-height:6px}
-  .card .price{flex:0 0 auto;width:50px;padding-top:3px}
+  .card .lcol{flex:0 0 auto;width:50px;display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding-top:3px}
+  .card .price{flex:0 0 auto}
+  .ppl{display:inline-flex;align-items:center;background:none;border:none;padding:2px;margin:-2px;border-radius:999px;font:inherit}
+  .ppl .pav{box-shadow:0 0 0 2px var(--card)}
+  .ppl .pav+.pav{margin-left:-4px}
+  button.ppl{cursor:pointer}
+  button.ppl:hover{box-shadow:0 0 0 1px var(--soft)}
+  .ppl.inherited{opacity:.45}
+  .ppl.add{width:24px;height:24px;margin:-2px;padding:0;justify-content:center;border:1.5px dashed var(--line);color:var(--soft);opacity:.75}
+  .ppl.add svg{width:12px;height:12px}
+  .ppl.add:hover{opacity:1;border-color:var(--soft);box-shadow:none}
   .card .b{flex:1 1 auto;min-width:0}
   .card .ti{font-family:"Fraunces";font-size:1.22rem;font-weight:600;line-height:1.2;color:var(--ink)}
   .card .ti a{color:var(--claret);text-decoration:underline;text-decoration-style:dotted;text-decoration-thickness:1.5px;text-underline-offset:3px}
@@ -104,7 +114,8 @@
   button.forppl{cursor:pointer;border-radius:999px}
   button.forppl:hover .pchip{border-color:var(--soft)}
   .pchip{display:inline-flex;align-items:center;gap:5px;font-size:.78rem;font-weight:600;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:2px 9px 2px 3px;background:var(--field)}
-  .pav{width:19px;height:19px;border-radius:50%;background:var(--pc);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.66rem;font-weight:700;line-height:1;flex:0 0 auto}
+  .pav{width:21px;height:21px;border-radius:50%;background:var(--pc);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;line-height:1;flex:0 0 auto}
+  .pav.emo{font-size:.82rem;font-weight:400}
   .pchip .pav+.pav{margin-left:-9px;box-shadow:0 0 0 2px var(--field)}
   .pfilter{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;margin:0 auto 24px;max-width:640px}
   .pfilter .gl{font-family:"Fraunces";font-style:italic;color:var(--claret);margin-right:4px;width:100%;text-align:center}
@@ -117,8 +128,20 @@
   label.pchk input{width:auto;margin:0}
   label.pchk:has(input:checked){border-color:var(--claret);box-shadow:inset 0 0 0 1px var(--claret)}
   .prow{display:flex;gap:8px;align-items:center;margin-bottom:8px}
-  .prow .pcol{width:30px;height:30px;border-radius:50%;background:var(--pc);border:2px solid var(--card);box-shadow:0 0 0 1px var(--line);cursor:pointer;flex:0 0 auto;padding:0}
-  .prow .pemo{width:64px;text-align:center;padding:8px 6px}
+  .prow .pavbtn{background:none;border:1px solid var(--line);border-radius:50%;padding:3px;cursor:pointer;flex:0 0 auto;display:inline-flex}
+  .prow .pavbtn:hover{border-color:var(--soft)}
+  .prow .pavbtn .pav{width:30px;height:30px;font-size:.85rem}
+  .prow .pavbtn .pav.emo{font-size:1.05rem}
+  .popmenu.avpick{width:300px;padding:8px 10px 10px}
+  .avcols{display:flex;flex-wrap:wrap;gap:7px;padding:4px 2px 8px}
+  .popmenu .avcols button{width:28px;height:28px;flex:0 0 auto;border-radius:50%;background:var(--pc);border:2px solid var(--card);box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0}
+  .popmenu .avcols button:hover{background:var(--pc);transform:scale(1.08)}
+  .popmenu .avcols button.sel{box-shadow:0 0 0 2px var(--ink)}
+  .popmenu .avemo{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;padding:2px 0 6px}
+  .popmenu .avemo button{width:auto;justify-content:center;font-size:1.2rem;padding:5px 0;border-radius:7px}
+  .popmenu .avemo button.sel{background:var(--field);box-shadow:inset 0 0 0 1px var(--claret)}
+  .popmenu button.avnone{font-size:.82rem;color:var(--soft);justify-content:center}
+  .popmenu button.avnone.sel{color:var(--ink);font-weight:600}
   .prow .pname{flex:1;padding:8px 10px}
   .cbx{width:17px;height:17px;border-radius:5px;border:1.5px solid var(--soft);display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;color:#fff}
   .cbx.on{background:var(--claret);border-color:var(--claret)}
@@ -255,11 +278,11 @@
     /* guests: text full width, then coins (left) + button (right) on one footer row */
     .wrap:not(.editing) .card{flex-wrap:wrap;align-items:center;justify-content:space-between;column-gap:12px;row-gap:9px;padding:13px 14px}
     .wrap:not(.editing) .card .b{order:0;flex:1 1 100%}
-    .wrap:not(.editing) .card .price{order:2;width:auto;flex:0 0 auto;padding-top:0}
+    .wrap:not(.editing) .card .lcol{order:2;width:auto;flex-direction:row;align-items:center;gap:10px;padding-top:0}
     .wrap:not(.editing) .card .actions{order:3;flex:0 0 auto;flex-direction:row}
     /* owner editing: no claim button, so keep the coins column and save the extra row */
     .wrap.editing .card{gap:10px;padding:13px 12px 13px 14px}
-    .wrap.editing .card .price{width:auto;min-width:30px}
+    .wrap.editing .card .lcol{width:auto;min-width:30px}
     .wrap.editing .card .actions:empty{display:none}
     .guide{flex-direction:column;align-items:flex-start;gap:8px;padding:12px 16px}
     .topbar{padding:10px 12px}
@@ -336,7 +359,8 @@
   }
   // people a list is for
   const PEOPLE_COLORS=["#c2577a","#3f8f84","#5b6fc4","#c48a3a","#6f9a4e","#8a5bb0","#4f8fb5","#b5654f"];
-  const personAv = p => `<span class="pav" style="--pc:${esc(p.color||PEOPLE_COLORS[0])}">${esc(p.emoji ? p.emoji : ([...(p.name||"?").trim()][0]||"?").toUpperCase())}</span>`;
+  const personAv = p => `<span class="pav${p.emoji?' emo':''}" style="--pc:${esc(p.color||PEOPLE_COLORS[0])}">${esc(p.emoji ? p.emoji : ([...(p.name||"?").trim()][0]||"?").toUpperCase())}</span>`;
+  const nameList = a => a.length<2 ? (a[0]||"") : a.slice(0,-1).join(", ")+" & "+a[a.length-1];
   const listPeople = () => (state.list && Array.isArray(state.list.people)) ? state.list.people : [];
   function effPeople(i){   // sub-items inherit their parent's people unless they have their own
     let cur=i, n=0;
@@ -349,14 +373,17 @@
     if(effPeople(i).includes(pf)) return true;
     return state.items.some(c=>c.parent_id===i.id && !!c.archived===!!i.archived && pfOK(c));
   }
-  function peopleChipsHTML(i, ed){
+  // avatars that sit under the coins: no extra line, names on hover and in the filter bar
+  function peopleAvHTML(i, ed){
     const ppl=listPeople(); if(!ppl.length) return "";
-    const own=(i.for_people||[]).map(id=>ppl.find(p=>p.id===id)).filter(Boolean);
-    if(!own.length) return "";
-    const inner = (own.length===ppl.length && ppl.length>1)
-      ? `<span class="pchip">${own.map(personAv).join("")}<span>Everyone</span></span>`
-      : own.map(p=>`<span class="pchip">${personAv(p)}<span>${esc(p.name)}</span></span>`).join("");
-    return ed ? `<button class="forppl" data-people="${i.id}" data-tip="Who's it for?">${inner}</button>` : `<div class="forppl">${inner}</div>`;
+    const pick=ids=> (ids||[]).map(id=>ppl.find(p=>p.id===id)).filter(Boolean);
+    let who=pick(i.for_people), inherited=false;
+    if(!who.length && ed && i.parent_id){ who=pick(effPeople(i)); inherited=who.length>0; }
+    if(!who.length) return ed ? `<button class="ppl add" data-people="${i.id}" data-tip="Who's it for?">${ICON.person}</button>` : "";
+    const label = (who.length===ppl.length && ppl.length>1) ? "For everyone" : "For "+nameList(who.map(p=>p.name));
+    const av = who.map(personAv).join("");
+    return ed ? `<button class="ppl${inherited?' inherited':''}" data-people="${i.id}" data-tip="${esc(label+(inherited?' (same as above)':''))}">${av}</button>`
+              : `<span class="ppl" data-tip="${esc(label)}" aria-label="${esc(label)}">${av}</span>`;
   }
   const isTouch = () => !!(window.matchMedia && matchMedia("(hover: none)").matches);
   const _timers={}; const debounced=(k,fn,ms)=>{ clearTimeout(_timers[k]); _timers[k]=setTimeout(fn, ms||900); };
@@ -877,7 +904,6 @@
       <button class="ib" data-moveitem="${i.id}" data-tip="Move to another section">${ICON.folder}</button>`}
       ${i.parent_id?`<button class="ib" data-unnest="${i.id}" data-tip="Make it its own item (not a sub-item)">${ICON.unnest}</button>`:""}
       <button class="ib ${hasNotes?'on':''}" data-itemnotes="${i.id}" data-tip="${hasNotes?'Edit notes on this item':'Add a note just for this item'}">${ICON.warn}</button>
-      ${listPeople().length?`<button class="ib ${(i.for_people||[]).length?'on':''}" data-people="${i.id}" data-tip="Who's it for?">${ICON.person}</button>`:""}
       <button class="ib ${i.hidden?'on':''}" data-hide="${i.id}" data-on="${i.hidden?1:0}" data-tip="${i.hidden?'Hidden from guests: click to show':'Hide from guests'}">${i.hidden?ICON.eyeoff:ICON.eye}</button>
       ${i.archived
         ? `<button class="ib" data-unarc="${i.id}" data-tip="Restore to the list">${ICON.restore}</button>`
@@ -887,8 +913,8 @@
     const priceAttr = ed ? ` editable" data-price="${i.id}" data-tip="Change price` : '';
     const cardHTML = `<div class="card ${taken?'taken':''} ${i.hidden?'ishidden':''} ${i.archived?'isarchived':''} ${depth>0?'subitem':''}" data-item="${i.id}">
       ${ed&&depth===0&&!i.archived?'<span class="grip" data-tip="Drag to reorder">'+ICON.grip+'</span>':''}
-      <div class="price${priceAttr}">${coinsHTML(i.coins||0)}</div>
-      <div class="b"><div class="ti">${titleHTML}${i.hidden?' <span class="hiddenbadge">hidden</span>':''}</div>${peopleChipsHTML(i, ed)}${noteHTML}${warnLine}${status}${iconRow}</div>
+      <div class="lcol"><div class="price${priceAttr}">${coinsHTML(i.coins||0)}</div>${peopleAvHTML(i, ed)}</div>
+      <div class="b"><div class="ti">${titleHTML}${i.hidden?' <span class="hiddenbadge">hidden</span>':''}</div>${noteHTML}${warnLine}${status}${iconRow}</div>
       <div class="actions">${actions}</div>
     </div>`;
     if(depth===0 && !i.archived) return `<div class="itemwrap" data-item="${i.id}">${cardHTML}${kidHTML}</div>`;
@@ -1181,7 +1207,7 @@
     const paint=()=>{
       host.innerHTML = ppl.map(p=>{ const on=(it.for_people||[]).includes(p.id);
           return `<button data-pid="${esc(p.id)}" class="${on?'active':''}"><span class="cbx ${on?'on':''}">${on?ICON.tick:''}</span>${personAv(p)}<span>${esc(p.name)}</span></button>`; }).join("")
-        + `<div class="pmfoot">${it.parent_id?"Leave everyone unticked to use the parent item's people.":"Untagged items only show when guests choose “Everyone”."}</div>`;
+;
       host.querySelectorAll("[data-pid]").forEach(b=> b.onclick=async e=>{ e.stopPropagation();
         const cur=new Set(it.for_people||[]); cur.has(b.dataset.pid)?cur.delete(b.dataset.pid):cur.add(b.dataset.pid);
         it.for_people=ppl.map(p=>p.id).filter(x=>cur.has(x)); paint(); drawList();
@@ -1331,20 +1357,19 @@
       <h3>${it?"Edit item":(quickSub?"Add a sub-item":"Add an item")}</h3>
       ${quickSub?`<p class="muted" style="font-size:.88rem;margin:0">Under <b>${esc(parentTitle)}</b></p>`:""}
       <label>What is it?</label><input id="t" value="${esc(it?it.title:"")}" placeholder="e.g. Merino polo jumper"/>
-      <label>Note <span class="lhint">links work here too: paste them in, or name them like [Blue one](https://…)</span></label>
-      <textarea id="n" placeholder="Size, colour, why you want it… One option per line works well.">${esc(it&&it.note?it.note:"")}</textarea>
+      <label>Note</label>
+      <textarea id="n" placeholder="Size, colour, why you want it…">${esc(it&&it.note?it.note:"")}</textarea>
       <div class="two">
         <div><label>Price</label><select id="c">${tierOpts}</select></div>
-        <div><label>Title link <span class="lhint">makes the name clickable</span></label><input id="u" value="${esc(it&&it.url?it.url:"")}" placeholder="https://…"/></div>
+        <div><label>Title link</label><input id="u" value="${esc(it&&it.url?it.url:"")}" placeholder="https://…"/></div>
       </div>
-      ${listPeople().length?`<label>Who's it for? <span class="lhint">${(quickSub||(it&&it.parent_id))?"leave blank to match the item above":"tick everyone it's for"}</span></label>
+      ${listPeople().length?`<label>Who's it for?</label>
         <div class="pchoose">${listPeople().map(p=>`<label class="pchk"><input type="checkbox" value="${esc(p.id)}" ${it&&(it.for_people||[]).includes(p.id)?'checked':''}/>${personAv(p)}<span>${esc(p.name)}</span></label>`).join("")}</div>`:""}
       ${quickSub?"":`<div class="fgroup"><div class="fh">Where it sits</div>
         <div class="two">
           <div><label>Section</label><select id="s">${secOpts}</select></div>
           <div><label>Sub-item of</label><select id="par">${parentOpts}</select></div>
         </div>
-        <p class="muted" style="font-size:.8rem;margin:6px 0 0">To link it with other items, use the link button under the item.</p>
       </div>`}
       <div class="fgroup"><div class="fh">Notes for guests</div>${warningsEditorHTML(it?it.warnings:[])}</div>
       <div class="fgroup"><div class="fh">Status</div>
@@ -1454,13 +1479,27 @@
     });
   }
 
+  // ---------- avatar picker: colour + emoji ----------
+  const AV_EMOJI="👶 🧒 👦 👧 🧑 👩 👨 🧔 👵 👴 🤰 👪 🐶 🐱 🐰 🦊 🐻 🐼 🦁 🐸 🦄 🐝 🦋 🐢 🌸 🌻 🌈 ⭐ 🌙 ☀️ ❤️ 💜 💙 💚 🎁 🎄 🎂 🎈 ⚽ 🏀 🎾 🚲 🎮 🎨 🎸 🎧 📚 ✈️ 🚗 ☕ 🍷 🍕 🍰 🧸".split(" ");
+  function avatarPicker(row, repaint){
+    const m=newPop(row.querySelector(".pavbtn"), `<div class="ph">Colour</div>
+      <div class="avcols">${PEOPLE_COLORS.map(c=>`<button type="button" data-c="${c}" style="--pc:${c}" class="${row.dataset.color===c?'sel':''}"></button>`).join("")}</div>
+      <div class="ph">Emoji</div>
+      <div class="avemo">${AV_EMOJI.map(e=>`<button type="button" data-e="${e}" class="${row.dataset.emoji===e?'sel':''}">${e}</button>`).join("")}</div>
+      <button type="button" class="avnone ${row.dataset.emoji?'':'sel'}" data-e="">No emoji: use their initial</button>`);
+    m.classList.add("avpick");
+    m.querySelectorAll("[data-c]").forEach(b=> b.onclick=e=>{ e.stopPropagation(); row.dataset.color=b.dataset.c;
+      m.querySelectorAll("[data-c]").forEach(x=>x.classList.toggle("sel",x===b)); repaint(row); });
+    m.querySelectorAll("[data-e]").forEach(b=> b.onclick=e=>{ e.stopPropagation(); row.dataset.emoji=b.dataset.e; repaint(row); closePop(); });
+  }
+
   // ---------- list settings (password / archive) ----------
   function listSettings(){
     const l=state.list;
-    const prow = p => `<div class="prow" data-pid="${esc(p.id||"")}"><button type="button" class="pcol" style="--pc:${esc(p.color)}" data-tip="Change colour"></button><input class="pemo" maxlength="4" placeholder="emoji" value="${esc(p.emoji||"")}" aria-label="Optional emoji"/><input class="pname" placeholder="Name" value="${esc(p.name||"")}"/><button type="button" class="ib" data-delp data-tip="Remove">${ICON.x}</button></div>`;
+    const prow = p => `<div class="prow" data-pid="${esc(p.id||"")}" data-color="${esc(p.color||PEOPLE_COLORS[0])}" data-emoji="${esc(p.emoji||"")}"><button type="button" class="pavbtn" data-tip="Colour & emoji">${personAv(p)}</button><input class="pname" placeholder="Name" value="${esc(p.name||"")}"/><button type="button" class="ib" data-delp data-tip="Remove">${ICON.x}</button></div>`;
     modal(`<h3>List settings</h3>
       <div class="fgroup" style="border-top:none;margin-top:4px;padding-top:0"><div class="fh">Who the list is for</div>
-        <p class="muted" style="font-size:.82rem;margin:4px 0 10px">Optional. Add people if this list covers more than one person, e.g. a family. Then tag each item with who it's for, and guests can filter to one person's presents. Leave empty for a list that's just for you.</p>
+        <p class="muted" style="font-size:.82rem;margin:4px 0 10px">Optional, for lists that cover several people.</p>
         <div id="ppl">${(Array.isArray(l.people)?l.people:[]).map(prow).join("")}</div>
         <div class="row"><button class="btn ghost sm" id="addp">+ Add person</button><button class="btn sm" id="savep">Save people</button></div>
       </div>
@@ -1483,21 +1522,23 @@
       <p class="muted" style="font-size:.82rem">Archiving hides it from guests — anyone on its link is sent to your other live lists instead.</p>
       <div class="err" id="er"></div>`, m=>{
       m.classList.add("wide");
+      const rowPerson=row=>({ name:row.querySelector(".pname").value.trim()||"?", color:row.dataset.color, emoji:row.dataset.emoji||null });
+      const repaint=row=>{ row.querySelector(".pavbtn").innerHTML=personAv(rowPerson(row)); };
       const bindP=row=>{
-        row.querySelector(".pcol").onclick=()=>{ const cur=getComputedStyle(row.querySelector(".pcol")).getPropertyValue("--pc").trim();
-          const k=PEOPLE_COLORS.indexOf(cur); row.querySelector(".pcol").style.setProperty("--pc", PEOPLE_COLORS[(k+1)%PEOPLE_COLORS.length]); };
-        row.querySelector("[data-delp]").onclick=()=>row.remove();
+        row.querySelector(".pname").addEventListener("input",()=>repaint(row));
+        row.querySelector("[data-delp]").onclick=()=>{ closePop(); row.remove(); };
+        row.querySelector(".pavbtn").onclick=e=>{ e.stopPropagation(); avatarPicker(row, repaint); };
       };
       m.querySelectorAll(".prow").forEach(bindP);
       m.querySelector("#addp").onclick=()=>{ const t=document.createElement("div");
-        t.innerHTML=prow({color:PEOPLE_COLORS[m.querySelectorAll(".prow").length % PEOPLE_COLORS.length]});
+        t.innerHTML=prow({name:"", color:PEOPLE_COLORS[m.querySelectorAll(".prow").length % PEOPLE_COLORS.length]});
         const row=t.firstElementChild; m.querySelector("#ppl").appendChild(row); bindP(row); row.querySelector(".pname").focus(); };
       m.querySelector("#savep").onclick=async()=>{
         const next=[...m.querySelectorAll(".prow")].map(r=>({
           id: r.dataset.pid || ("p"+Math.random().toString(36).slice(2,9)),
           name: r.querySelector(".pname").value.trim(),
-          emoji: r.querySelector(".pemo").value.trim() || null,
-          color: getComputedStyle(r.querySelector(".pcol")).getPropertyValue("--pc").trim() || PEOPLE_COLORS[0],
+          emoji: r.dataset.emoji || null,
+          color: r.dataset.color || PEOPLE_COLORS[0],
         })).filter(p=>p.name);
         const keep=new Set(next.map(p=>p.id));
         const { error } = await sb.from("lists").update({people:next}).eq("id", l.id);
