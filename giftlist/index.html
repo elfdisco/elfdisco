@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Gift lists · elfdisco</title>
+<title>elfdisco</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
 <meta name="theme-color" content="#8d3350"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -45,7 +45,7 @@
   body{font-family:"Inter",system-ui,sans-serif;color:var(--ink);font-size:16px;line-height:1.55;min-height:100vh;background:var(--page);background-attachment:fixed;overflow-x:hidden}
   .card .ti{overflow-wrap:anywhere}
   a{color:var(--claret)}
-  .topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--bar);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+  .topbar{position:sticky;top:0;z-index:30;transition:transform .14s ease-out;will-change:transform;display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--bar);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
   .topbar .brand{font-family:"Fraunces";font-weight:600;color:var(--claret-deep);text-decoration:none;font-size:1.05rem}
   .topbar .sp{flex:1}
   .topbar .who{color:var(--soft);font-size:.86rem}
@@ -155,6 +155,24 @@
   .moverow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 4px}
   .moverow button{display:flex;align-items:center;justify-content:center;gap:7px;font:inherit;font-size:.9rem;font-weight:600;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:10px;padding:11px 8px;cursor:pointer}
   .moverow button:disabled{opacity:.35;cursor:default}
+  .topbar.away{transform:translateY(-100%)}
+  .sec.sec-hidden{border:2px dashed rgba(192,90,78,.6);border-radius:16px;padding:14px 14px 8px;margin-left:-16px;margin-right:-16px;
+    background:repeating-linear-gradient(135deg,rgba(192,90,78,.06) 0 12px,transparent 12px 24px)}
+  .sec.sec-hidden .dropzone,.sec.sec-hidden > .card,.sec.sec-hidden > .itemwrap{opacity:.55}
+  .sec.sec-hidden .sec-h h2{color:var(--soft)}
+  .hidnote{display:flex;align-items:center;gap:10px;margin:0 0 14px;padding:10px 12px;border-radius:10px;background:rgba(192,90,78,.14);border:1px solid rgba(192,90,78,.45);color:#d47a6e;font-size:.88rem;line-height:1.35}
+  .hidnote svg{flex:0 0 auto}
+  .hidnote span{flex:1}
+  .hidnote b{color:#e08b7f}
+  .hidnote button{flex:0 0 auto;font:inherit;font-weight:600;font-size:.84rem;color:#fff;background:#c05a4e;border:none;border-radius:8px;padding:7px 11px;cursor:pointer}
+  .hidnote button:hover{background:#a84a3f}
+  .iconbtn.hidstate{color:#d47a6e;border-color:rgba(192,90,78,.65);background:rgba(192,90,78,.12)}
+  .hiddenbadge{background:#c05a4e !important;color:#fff !important}
+  @media (max-width:560px){ .sec.sec-hidden{margin-left:-6px;margin-right:-6px;padding:12px 8px 6px} .hidnote{flex-wrap:wrap} .hidnote button{margin-left:auto} }
+  .popmenu.infopop{min-width:0;padding:6px 12px 8px}
+  .infopop .iprow{display:flex;align-items:center;gap:9px;padding:5px 0;font-size:.92rem;color:var(--ink);white-space:nowrap}
+  [data-priceinfo],[data-pplinfo]{cursor:default}
+  @media (hover:none){ [data-priceinfo],[data-pplinfo]{cursor:pointer} }
   .ib.ib-more{display:none}
   @media (hover:none){
     [data-tip]:hover::after{display:none}
@@ -292,7 +310,7 @@
 </head>
 <body>
   <div class="topbar">
-    <a class="brand" href="#/">elfdisco gift lists</a>
+    <a class="brand" href="#/">elfdisco</a>
     <span class="sp"></span>
     <span class="who" id="who"></span>
     <button class="iconbtn" id="themeBtn" title="Light / dark">◐</button>
@@ -383,7 +401,7 @@
     const label = (who.length===ppl.length && ppl.length>1) ? "For everyone" : "For "+nameList(who.map(p=>p.name));
     const av = who.map(personAv).join("");
     return ed ? `<button class="ppl${inherited?' inherited':''}" data-people="${i.id}" data-tip="${esc(label+(inherited?' (same as above)':''))}">${av}</button>`
-              : `<span class="ppl" data-tip="${esc(label)}" aria-label="${esc(label)}">${av}</span>`;
+              : `<span class="ppl" data-pplinfo="${i.id}" data-tip="${esc(label)}" aria-label="${esc(label)}">${av}</span>`;
   }
   const isTouch = () => !!(window.matchMedia && matchMedia("(hover: none)").matches);
   const _timers={}; const debounced=(k,fn,ms)=>{ clearTimeout(_timers[k]); _timers[k]=setTimeout(fn, ms||900); };
@@ -472,7 +490,7 @@
     const b=$("#authBtn"), who=$("#who");
     if(session){ b.textContent="Sign out"; b.onclick=async()=>{ await sb.auth.signOut(); location.hash="#/"; };
       who.textContent = profile ? ("@"+profile.username) : session.user.email;
-    } else { b.textContent="Owner sign in"; b.onclick=()=>{ location.hash="#/signin"; }; who.textContent=""; }
+    } else { b.textContent="Sign in"; b.onclick=()=>{ location.hash="#/signin"; }; who.textContent=""; }
   }
 
   // ===================================================================
@@ -490,6 +508,7 @@
   }
   async function route(){
     const r = parseHash();
+    document.title = "elfdisco";
     app.innerHTML=LOADING;
     try{
       if(r.view==="signin") return renderSignin();
@@ -511,8 +530,8 @@
         <div class="sub">make a list, share a link, nobody doubles up</div>
         <div class="rule"></div>
         <div class="panel center">
-          <p class="muted">Signed-out visitors open a list from its share link. If this is your list, sign in to build and edit it.</p>
-          <button class="btn wide" onclick="location.hash='#/signin'">Owner sign in / sign up</button>
+          <p class="muted">Got a link to someone's list? Just open it. To make or edit your own list, sign in.</p>
+          <button class="btn wide" onclick="location.hash='#/signin'">Sign in or create a list</button>
         </div>
       </div>`;
   }
@@ -545,8 +564,8 @@
     if(session){ location.hash="#/"; return; }
     app.innerHTML = `
       <div class="panel">
-        <h2>Owner sign in</h2>
-        <p class="muted" style="font-size:.9rem">Only list owners need an account. Guests just open your link.</p>
+        <h2>Sign in</h2>
+        <p class="muted" style="font-size:.9rem">To make or edit your own list. Viewing someone's list doesn't need an account.</p>
         <label>Email</label><input id="em" type="email" autocomplete="email"/>
         <label>Password</label><input id="pw" type="password" autocomplete="current-password"/>
         <div class="err" id="er"></div>
@@ -720,6 +739,7 @@
     state = { ...res, username, slug, editing:false, revealed:false, claims:[], pfilter: sessionStorage.getItem("elfdisco.giftlist.pf."+res.list.id)||null };
     state.isOwner = !!(session && session.user.id===res.owner.id);
     state.editing = state.isOwner;   // owners start in edit mode; "View as guest" switches it off
+    document.title = res.list.title + " · elfdisco";
 
     // archived list: guests get sent to the owner's live lists instead
     if(res.list.is_archived && !state.isOwner){
@@ -779,22 +799,22 @@
       </div>` : "";
 
     // build section blocks (claimed / taken items stay in place, greyed)
-    const visibleSections = sections.filter(s=> s.visible || isOwner);
+    const visibleSections = sections.filter(s=> s.visible || (isOwner && editing));
     let secHTML = visibleSections.map((s,idx)=>{
       const top = items.filter(i=> i.section_id===s.id && !i.parent_id && !i.archived && (!i.hidden || (isOwner && editing)) && pfOK(i))
                        .sort((a,b)=>a.position-b.position);
       if(state.pfilter && !top.length) return "";
       const cards = buildUnits(top, editing) || (editing?"":'<p class="muted" style="margin:4px 0 14px">—</p>');
-      return `<div class="sec" data-sec="${s.id}">
+      const hiddenNote = !s.visible ? `<div class="hidnote">${ICON.eyeoff}<span><b>Hidden from guests.</b> Nobody but you can see this section or anything in it.</span><button data-vis="${s.id}" data-on="0">Show to guests</button></div>` : "";
+      return `<div class="sec${s.visible?'':' sec-hidden'}" data-sec="${s.id}">
         <div class="sec-h"><span class="n">${String(idx+1).padStart(2,"0")}</span>
           <h2 ${editing?`contenteditable="${CE}" spellcheck="false" data-edit-sec="${s.id}"`:''}>${esc(s.title)}</h2>
-          ${!s.visible?'<span class="hidden-tag">on hold</span>':''}
           <span class="ln"></span>
-          ${editing?`<button class="iconbtn" data-vis="${s.id}" data-on="${s.visible?1:0}" data-tip="${s.visible?'Visible to guests: click to hide section':'Hidden from guests: click to show'}">${s.visible?ICON.eye:ICON.eyeoff}</button>
+          ${editing?`<button class="iconbtn${s.visible?'':' hidstate'}" data-vis="${s.id}" data-on="${s.visible?1:0}" data-tip="${s.visible?'Visible to guests: click to hide section':'Hidden from guests: click to show'}">${s.visible?ICON.eye:ICON.eyeoff}</button>
             <button class="iconbtn" data-secwarn="${s.id}" data-tip="${(s.warnings&&s.warnings.length)?'Edit section notes':'Add a note to every item here'}" style="${(s.warnings&&s.warnings.length)?'color:var(--gold);border-color:rgba(200,154,78,.55)':''}">${ICON.warn}</button>
             <button class="iconbtn" data-delsec="${s.id}" data-tip="Delete section">${ICON.trash}</button>`:""}
         </div>
-        <div class="dropzone" data-zone="${s.id}">${cards}</div>
+        ${hiddenNote}<div class="dropzone" data-zone="${s.id}">${cards}</div>
         ${editing?`<button class="btn ghost sm" data-additem="${s.id}">+ Add item</button>`:""}
       </div>`;
     }).join("");
@@ -809,14 +829,15 @@
       const collapsed = localStorage.getItem("elfdisco.giftlist.archc."+list.id)==="1";
       const secIdx = id => { const k=sections.findIndex(s=>s.id===id); return k<0?999:k; };
       archVisible.sort((a,b)=> secIdx(a.section_id)-secIdx(b.section_id) || a.position-b.position);
-      archHTML = `<div class="sec archsec">
+      const archHidden = ownerEditing && !list.show_archived;
+      archHTML = `<div class="sec archsec${archHidden?' sec-hidden':''}">
         <div class="sec-h">
           <button class="archtoggle ${collapsed?'collapsed':''}" id="archToggle" aria-label="${collapsed?'Show':'Collapse'} archived items">${ICON.chevron}</button>
           <h2>Archived</h2><span class="n">${archVisible.length}</span>
-          ${(ownerEditing && !list.show_archived)?'<span class="hidden-tag">hidden from guests</span>':''}
           <span class="ln"></span>
-          ${ownerEditing?`<button class="iconbtn" id="archVis" data-tip="${list.show_archived?'Visible to guests: click to hide':'Hidden from guests: click to show'}">${list.show_archived?ICON.eye:ICON.eyeoff}</button>`:""}
+          ${ownerEditing?`<button class="iconbtn${list.show_archived?'':' hidstate'}" data-archvis="1" data-tip="${list.show_archived?'Visible to guests: click to hide':'Hidden from guests: click to show'}">${list.show_archived?ICON.eye:ICON.eyeoff}</button>`:""}
         </div>
+        ${archHidden?`<div class="hidnote">${ICON.eyeoff}<span><b>Hidden from guests.</b> Nobody but you can see archived items.</span><button data-archvis="1">Show to guests</button></div>`:""}
         ${collapsed?'':archVisible.map(i=>renderItem(i,0)).join("")}
       </div>`;
     }
@@ -910,11 +931,13 @@
         : `<button class="ib" data-arcitem="${i.id}" data-tip="Move to Archived">${ICON.archive}</button>`}
       <button class="ib ib-more" data-more="${i.id}">${ICON.dots}<span>Options</span></button>
     </div>`;
-    const priceAttr = ed ? ` editable" data-price="${i.id}" data-tip="Change price` : '';
+    const tier = state.tiers.find(t=>t.coins===i.coins);
+    const priceTip = i.coins ? (tier ? tier.hint : i.coins+" coins") : "Price not given";
+    const priceAttr = ed ? ` editable" data-price="${i.id}" data-tip="Change price` : `" data-priceinfo="${i.id}" data-tip="${esc(priceTip)}`;
     const cardHTML = `<div class="card ${taken?'taken':''} ${i.hidden?'ishidden':''} ${i.archived?'isarchived':''} ${depth>0?'subitem':''}" data-item="${i.id}">
       ${ed&&depth===0&&!i.archived?'<span class="grip" data-tip="Drag to reorder">'+ICON.grip+'</span>':''}
       <div class="lcol"><div class="price${priceAttr}">${coinsHTML(i.coins||0)}</div>${peopleAvHTML(i, ed)}</div>
-      <div class="b"><div class="ti">${titleHTML}${i.hidden?' <span class="hiddenbadge">hidden</span>':''}</div>${noteHTML}${warnLine}${status}${iconRow}</div>
+      <div class="b"><div class="ti">${titleHTML}${i.hidden?' <span class="hiddenbadge">hidden from guests</span>':''}</div>${noteHTML}${warnLine}${status}${iconRow}</div>
       <div class="actions">${actions}</div>
     </div>`;
     if(depth===0 && !i.archived) return `<div class="itemwrap" data-item="${i.id}">${cardHTML}${kidHTML}</div>`;
@@ -1003,14 +1026,23 @@
     app.querySelectorAll("[data-claim]").forEach(b=> b.onclick=()=>claimModal(b.dataset.claim));
     app.querySelectorAll("[data-release]").forEach(b=> b.onclick=()=>releaseItem(b.dataset.release));
     app.querySelectorAll("[data-manage]").forEach(b=> b.onclick=()=>manageClaimModal(b.dataset.manage));
+    // phones have no hover, so a tap on the coins or avatars explains them
+    app.querySelectorAll("[data-priceinfo]").forEach(el=> el.onclick=e=>{ if(!isTouch()) return; e.stopPropagation();
+      const it=state.items.find(x=>x.id===el.dataset.priceinfo); if(!it) return;
+      const t=state.tiers.find(x=>x.coins===it.coins);
+      infoPop(el, it.coins ? `<div class="iprow">${coinsHTML(it.coins)}<span>${esc(t?t.hint:it.coins+" coins")}</span></div>` : `<div class="iprow"><span>No price given</span></div>`, "Price guide"); });
+    app.querySelectorAll("[data-pplinfo]").forEach(el=> el.onclick=e=>{ if(!isTouch()) return; e.stopPropagation();
+      const it=state.items.find(x=>x.id===el.dataset.pplinfo); if(!it) return;
+      const ppl=listPeople(), who=(it.for_people||[]).map(id=>ppl.find(p=>p.id===id)).filter(Boolean);
+      infoPop(el, who.map(p=>`<div class="iprow">${personAv(p)}<span>${esc(p.name)}</span></div>`).join(""), (who.length===ppl.length && ppl.length>1) ? "For everyone" : "For"); });
     app.querySelectorAll("[data-pf]").forEach(b=> b.onclick=()=>{
       state.pfilter=b.dataset.pf||null; sessionStorage.setItem("elfdisco.giftlist.pf."+list.id, state.pfilter||""); drawList(); });
     // archived section: collapse (everyone, remembered per browser) + guest visibility (owner)
     if(byId("#archToggle")) byId("#archToggle").onclick=()=>{
       const k="elfdisco.giftlist.archc."+list.id; localStorage.setItem(k, localStorage.getItem(k)==="1"?"0":"1"); drawList(); };
-    if(byId("#archVis")) byId("#archVis").onclick=async()=>{
+    app.querySelectorAll("[data-archvis]").forEach(b=> b.onclick=async()=>{
       list.show_archived=!list.show_archived; drawList();
-      await save(sb.from("lists").update({show_archived:list.show_archived}).eq("id", list.id), list.show_archived?"Archived items visible to guests":"Archived items hidden from guests"); };
+      await save(sb.from("lists").update({show_archived:list.show_archived}).eq("id", list.id), list.show_archived?"Archived items visible to guests":"Archived items hidden from guests"); });
 
     if(editing){
       // inline fields: Enter commits (notes: Enter = new line, Ctrl/Cmd+Enter or click away commits)
@@ -1188,6 +1220,9 @@
     setTimeout(()=> document.addEventListener("click", function off(e){ if(!document.body.contains(m)){ document.removeEventListener("click", off); return; }
       if(!m.contains(e.target)){ closePop(); document.removeEventListener("click", off); } }), 0);
     return m;
+  }
+  function infoPop(anchor, html, head){
+    const m=newPop(anchor, `${head?`<div class="ph">${esc(head)}</div>`:""}${html}`); m.classList.add("infopop");
   }
   function choiceModal(title, options){
     modal(`<h3>${esc(title)}</h3><div class="actlist">${options.map((o,k)=>`<button data-k="${k}" class="${o.active?'active':''}">${o.html}</button>`).join("")}</div>`, m=>{
@@ -1659,6 +1694,17 @@
     if(session && path==="signin"){ location.hash="#/"; return; }
     route();
   });
+
+  (()=>{   // top bar: away on scroll down, back the moment you scroll up
+    const bar=document.querySelector(".topbar"); let last=window.scrollY, busy=false;
+    window.addEventListener("scroll", ()=>{ if(busy) return; busy=true; requestAnimationFrame(()=>{
+      const y=Math.max(0, window.scrollY), d=y-last;
+      if(y <= bar.offsetHeight) bar.classList.remove("away");
+      else if(d > 4){ bar.classList.add("away"); closePop(); }
+      else if(d < -4) bar.classList.remove("away");
+      if(Math.abs(d) > 4) last=y;
+      busy=false; }); }, {passive:true});
+  })();
 
   (async ()=>{
     const { data } = await sb.auth.getSession();
