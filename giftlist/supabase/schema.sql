@@ -30,7 +30,8 @@ create table if not exists public.lists (
   surprise_mode boolean not null default true,   -- owner can't see claims unless they reveal
   is_archived   boolean not null default false,
   show_archived boolean not null default true,   -- show the "Archived" items section to guests
-  item_warning  text,                          -- optional note shown as a ⚠ on every item (hover)
+  item_warning  text,
+  people        jsonb not null default '[]'::jsonb,  -- [{id,name,color,emoji}] who the list is for                          -- optional note shown as a ⚠ on every item (hover)
   created_at    timestamptz not null default now(),
   unique (owner_id, slug)
 );
@@ -80,6 +81,7 @@ create table if not exists public.items (
   link_group uuid,                            -- peer-link: items sharing a value are "related"
   link_label text,                            -- custom label for the linked group (shared by members)
   warnings   jsonb not null default '[]'::jsonb,  -- [{style,text}] coloured notes on this item
+  for_people jsonb not null default '[]'::jsonb,  -- ids from lists.people; empty = untagged (sub-items inherit)
   created_at timestamptz not null default now()
 );
 
@@ -133,7 +135,9 @@ create policy p_tiers_write on public.tiers for all
 
 drop policy if exists p_sections_read on public.sections;
 drop policy if exists p_sections_write on public.sections;
-create policy p_sections_read  on public.sections for select using (true);
+create policy p_sections_read  on public.sections for select using (
+  visible or exists (select 1 from public.lists l where l.id = sections.list_id and l.owner_id = auth.uid())
+);  -- "on hold" sections are owner-only
 create policy p_sections_write on public.sections for all
   using (exists (select 1 from public.lists l where l.id = sections.list_id and l.owner_id = auth.uid()))
   with check (exists (select 1 from public.lists l where l.id = sections.list_id and l.owner_id = auth.uid()));
@@ -141,9 +145,15 @@ create policy p_sections_write on public.sections for all
 drop policy if exists p_items_read on public.items;
 drop policy if exists p_items_write on public.items;
 create policy p_items_read  on public.items for select using (
-  not hidden
-  or exists (select 1 from public.lists l where l.id = items.list_id and l.owner_id = auth.uid())
-);  -- hidden items are owner-only
+  exists (select 1 from public.lists l where l.id = items.list_id and l.owner_id = auth.uid())
+  or (
+    not items.hidden
+    and exists (select 1 from public.sections s where s.id = items.section_id and s.visible)
+    and exists (select 1 from public.lists l where l.id = items.list_id
+                  and not l.is_archived
+                  and (not items.archived or l.show_archived))
+  )
+);  -- guests never receive hidden items, items in hidden sections, hidden archived items, or items on archived lists
 create policy p_items_write on public.items for all
   using (exists (select 1 from public.lists l where l.id = items.list_id and l.owner_id = auth.uid()))
   with check (exists (select 1 from public.lists l where l.id = items.list_id and l.owner_id = auth.uid()));
